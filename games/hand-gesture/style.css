@@ -1,0 +1,153 @@
+/* Holo-Controller Styles */
+
+.game-container {
+    background: #000;
+}
+
+.input_video {
+    display: none; /* We use canvas to draw */
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+}
+
+.output_canvas {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    transform: scaleX(-1); /* Mirror effect */
+    object-fit: cover;
+}
+
+.hud-overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Let clicks pass through if needed */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.target-display {
+    background: rgba(0, 0, 0, 0.6);
+    border: 2px solid var(--neon-cyan);
+    padding: 20px 40px;
+    text-align: center;
+    border-radius: 10px;
+    margin-bottom: 50px;
+    backdrop-filter: blur(5px);
+}
+
+.target-display p {
+    color: var(--pale-cyan);
+    font-size: 1rem;
+    letter-spacing: 2px;
+}
+
+.target-display h1 {
+    font-size: 6rem;
+    color: var(--text-white);
+    text-shadow: 0 0 20px var(--neon-cyan);
+    margin: 0;
+}
+
+.current-display {
+    text-align: center;
+}
+
+.current-display h2 {
+    font-size: 4rem;
+    color: var(--pale-cyan);
+    margin: 10px 0;
+}
+
+.loading-bar {
+    width: 200px;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 5px;
+    overflow: hidden;
+    margin: 0 auto;
+}
+
+.loading-bar::after {
+    content: '';
+    display: block;
+    height: 100%;
+    width: 0%;
+    background: var(--neon-cyan);
+    transition: width 0.1s linear;
+}
+
+.loading-bar.filling::after {
+    width: 100%;
+    transition: width 1s linear;
+}
+
+.score-display {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 2rem;
+    color: var(--neon-cyan);
+}
+
+/* Debug Controls */
+.debug-controls {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.8);
+    padding: 20px;
+    border: 1px solid red;
+    pointer-events: auto;
+    text-align: center;
+}
+
+.debug-buttons button {
+    padding: 10px 20px;
+    margin: 0 5px;
+    background: #333;
+    color: white;
+    border: 1px solid white;
+    cursor: pointer;
+}
+
+.debug-buttons button:hover {
+    background: #555;
+}
+
+/* Rotate Overlay */
+.rotate-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: #000;
+    z-index: 9999;
+    display: none; /* Hidden by default */
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    color: var(--neon-cyan);
+}
+
+.rotate-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    animation: rotatePhone 2s infinite;
+}
+
+@keyframes rotatePhone {
+    0% { transform: rotate(0deg); }
+    50% { transform: rotate(90deg); }
+    100% { transform: rotate(0deg); }
+}
+
+@media (orientation: portrait) {
+    .rotate-overlay {
+        display: flex;
+    }
+}

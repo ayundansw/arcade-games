@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RIT Arcade Hub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Roboto+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="background-overlay"></div>
+    <div class="scanlines"></div>
+
+    <header class="main-header">
+        <h1 class="rit-logo" data-text="RIT ARCADE">RIT ARCADE</h1>
+        <p class="subtitle">SELECT YOUR MODULE</p>
+    </header>
+
+    <main class="arcade-grid">
+        <!-- Game 1: Dev-Bird -->
+        <a href="games/dev-bird/index.html" class="game-card">
+            <div class="card-content">
+                <div class="card-icon">🚀</div>
+                <h2>DEV-BIRD</h2>
+                <p>Navigate the firewall.</p>
+                <div class="status">ONLINE</div>
+            </div>
+            <div class="card-border"></div>
+        </a>
+
+        <!-- Game 2: Loop Puzzle -->
+        <a href="games/loop-puzzle/index.html" class="game-card">
+            <div class="card-content">
+                <div class="card-icon">🧩</div>
+                <h2>SYSTEM REPAIR</h2>
+                <p>Reconnect the data flow.</p>
+                <div class="status">ONLINE</div>
+            </div>
+            <div class="card-border"></div>
+        </a>
+
+        <!-- Game 3: Tech Quiz -->
+        <a href="games/tech-quiz/index.html" class="game-card">
+            <div class="card-content">
+                <div class="card-icon">⚡</div>
+                <h2>RAPID FIRE</h2>
+                <p>Test your tech knowledge.</p>
+                <div class="status">ONLINE</div>
+            </div>
+            <div class="card-border"></div>
+        </a>
+
+        <!-- Game 4: Hand Gesture -->
+        <a href="games/hand-gesture/index.html" class="game-card">
+            <div class="card-content">
+                <div class="card-icon">🖐️</div>
+                <h2>HOLO-CONTROLLER</h2>
+                <p>Gesture control interface.</p>
+                <div class="status">Wait...</div>
+            </div>
+            <div class="card-border"></div>
+        </a>
+    </main>
+
+    <footer class="main-footer">
+        <p>SYSTEM STATUS: STABLE | <span id="clock">00:00:00</span></p>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

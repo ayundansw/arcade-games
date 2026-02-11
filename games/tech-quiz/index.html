@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tech Quiz | RIT Arcade</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@300;400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../css/variables.css">
+    <link rel="stylesheet" href="../../css/game-ui.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <a href="../../index.html" class="exit-btn">EXIT MODULE</a>
+        
+        <div class="quiz-hud">
+            <div class="timer-bar">
+                <div id="progress" class="progress"></div>
+            </div>
+            <div class="stats">
+                <div class="score">SCORE: <span id="score">0</span></div>
+                <div class="lives" id="lives">❤️❤️❤️</div>
+            </div>
+        </div>
+
+        <div id="quiz-card" class="quiz-card">
+            <h2 id="question">Initialize System...</h2>
+            <div id="options" class="options-grid">
+                <!-- Options injected via JS -->
+            </div>
+        </div>
+
+        <div id="gameOverModal" class="modal-overlay">
+            <div class="modal-content">
+                <h2 class="modal-title">SYSTEM FAILURE</h2>
+                <p class="modal-score">FINAL SCORE: <span id="finalScore">0</span></p>
+                <button id="retryBtn" class="retry-btn">REBOOT SYSTEM</button>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

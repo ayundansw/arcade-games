@@ -1,0 +1,190 @@
+/* Landing Page Specific Styles */
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  justify-content: space-between;
+  background: radial-gradient(circle at center, #2a2a2a 0%, #000 100%);
+}
+
+.background-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+      linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+      linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  background-size: 100% 2px, 3px 100%;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.scanlines {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.15),
+    rgba(0, 0, 0, 0.15) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Header */
+.main-header {
+  text-align: center;
+  padding: 40px 20px;
+  margin-bottom: 20px;
+}
+
+.rit-logo {
+  font-size: 4rem;
+  color: var(--text-white);
+  letter-spacing: 10px;
+  position: relative;
+  text-shadow: 
+      0 0 10px var(--neon-cyan),
+      0 0 20px var(--neon-cyan),
+      0 0 40px var(--neon-cyan),
+      0 0 80px var(--neon-cyan);
+  animation: flicker 1.5s infinite alternate;
+}
+
+@keyframes flicker {
+  0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+      opacity: 1;
+      text-shadow: 
+          0 0 10px var(--neon-cyan),
+          0 0 20px var(--neon-cyan),
+          0 0 40px var(--neon-cyan);
+  }
+  20%, 24%, 55% {
+      opacity: 0.5;
+      text-shadow: none;
+  }
+}
+
+.subtitle {
+  color: var(--pale-cyan);
+  font-family: var(--font-code);
+  letter-spacing: 4px;
+  margin-top: 10px;
+  opacity: 0.8;
+}
+
+/* Arcade Grid */
+.arcade-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 30px;
+  padding: 20px 5%;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.game-card {
+  position: relative;
+  height: 350px;
+  background: var(--glass-bg);
+  border: 1px solid rgba(5, 217, 231, 0.2);
+  text-decoration: none;
+  color: var(--text-white);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  overflow: hidden;
+  backdrop-filter: blur(5px);
+}
+
+.card-content {
+  z-index: 2;
+  text-align: center;
+}
+
+.card-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  filter: drop-shadow(0 0 10px var(--neon-cyan));
+}
+
+.game-card h2 {
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+  color: var(--pale-cyan);
+  text-transform: uppercase;
+}
+
+.game-card p {
+  font-family: var(--font-code);
+  font-size: 0.9rem;
+  color: #aaa;
+  margin-bottom: 20px;
+}
+
+.status {
+  display: inline-block;
+  padding: 5px 10px;
+  border: 1px solid var(--neon-cyan);
+  color: var(--neon-cyan);
+  font-size: 0.8rem;
+  font-family: var(--font-code);
+  text-transform: uppercase;
+  background: rgba(5, 217, 231, 0.1);
+}
+
+/* Hover Effects */
+.game-card:hover {
+  transform: scale(1.05);
+  border-color: var(--neon-cyan);
+  box-shadow: 
+      0 0 20px rgba(5, 217, 231, 0.4),
+      inset 0 0 20px rgba(5, 217, 231, 0.1);
+}
+
+.game-card:hover .rit-logo {
+  animation: none;
+}
+
+.game-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: 0.5s;
+}
+
+.game-card:hover::before {
+  left: 100%;
+}
+
+/* Footer */
+.main-footer {
+  text-align: center;
+  padding: 20px;
+  font-family: var(--font-code);
+  font-size: 0.8rem;
+  color: #666;
+  border-top: 1px solid #333;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+@media (max-width: 768px) {
+  .rit-logo {
+      font-size: 2.5rem;
+  }
+}

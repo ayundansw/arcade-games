@@ -1,0 +1,30 @@
+:root {
+  /* Color Palette */
+  --bg-dark: #1C1515;       /* Void Black */
+  --bg-panel: #979393;      /* Metal Grey */
+  --neon-cyan: #05D9E7;     /* Primary Accent (Glows) */
+  --pale-cyan: #D1F8FF;     /* Secondary Accent */
+  --text-white: #FFFFFF;
+  
+  /* Fonts */
+  --font-main: 'Orbitron', sans-serif;
+  --font-code: 'Roboto Mono', monospace;
+
+  /* Glassmorphism */
+  --glass-bg: rgba(28, 21, 21, 0.8);
+  --glass-border: 1px solid rgba(5, 217, 231, 0.3);
+  --glass-blur: blur(10px);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: var(--text-white);
+  font-family: var(--font-main);
+  overflow-x: hidden;
+}

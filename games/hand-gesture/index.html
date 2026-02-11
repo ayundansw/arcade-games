@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Holo-Controller | RIT Arcade</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@300;400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../css/variables.css">
+    <link rel="stylesheet" href="../../css/game-ui.css">
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- MediaPipe Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div class="game-container">
+        <a href="../../index.html" class="exit-btn">EXIT MODULE</a>
+        
+        <video id="input_video" class="input_video" playsinline></video>
+        <canvas id="output_canvas" class="output_canvas"></canvas>
+        
+        <div class="hud-overlay">
+            <div class="target-display">
+                <p>TARGET</p>
+                <h1 id="targetNumber">?</h1>
+            </div>
+            
+            <div class="current-display">
+                <p>DETECTED</p>
+                <h2 id="detectedNumber">0</h2>
+                <div id="loadingBar" class="loading-bar"></div>
+            </div>
+
+            <div class="score-display">SCORE: <span id="score">0</span></div>
+        </div>
+
+        <div id="debugControls" class="debug-controls" style="display: none;">
+            <p>DEBUG MODE ACTIVE</p>
+            <div class="debug-buttons">
+                <button onclick="setDebugFinger(0)">0</button>
+                <button onclick="setDebugFinger(1)">1</button>
+                <button onclick="setDebugFinger(2)">2</button>
+                <button onclick="setDebugFinger(3)">3</button>
+                <button onclick="setDebugFinger(4)">4</button>
+                <button onclick="setDebugFinger(5)">5</button>
+            </div>
+        </div>
+
+        <div id="rotateOverlay" class="rotate-overlay">
+            <div class="rotate-content">
+                <div class="rotate-icon">📱</div>
+                <h2>PLEASE ROTATE DEVICE</h2>
+                <p>Holo-Mode requires Landscape orientation.</p>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
