@@ -213,9 +213,9 @@ function handleInput(e) {
             updateMonsterVisuals();
             console.log("Entity Spawned!");
 
-            // Slower Speed: 800ms (was 300ms)
-            let speed = 700;
-            if (level >= 3) speed = 600;
+            // Slower Speed: 1.5 Seconds per move (1500ms)
+            let speed = 1500;
+            if (level >= 3) speed = 1200; // Slightly faster but still slow on higher levels
 
             monsterInterval = setInterval(moveMonster, speed);
         }, 10000); // 10s Delay

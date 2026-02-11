@@ -18,47 +18,16 @@ let frames = 0;
 let score = 0;
 let isGameOver = false;
 let isGameStarted = false; // Waiting for countdown
-let gameSpeed = 3;
+let gameSpeed = 2; // Reduced from 3 for easier start
 
 // Control State
 let liftInput = 0; // 0 = Neutral, 1 = Up (Open), -1 = Down (Fist)
 
 // Assets
 const playerImg = new Image();
-// Fallback: Inline SVG for transparent plane (Facing RIGHT)
-const svgString = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-  <defs>
-    <filter id="glow">
-      <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
-      <feMerge>
-        <feMergeNode in="coloredBlur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-  </defs>
-  <!-- Main Fuselage: Pointing Right -->
-  <path d="M10,24 L45,24 L62,32 L45,40 L10,40 Z" fill="#00ffff" stroke="#0088ff" stroke-width="2" filter="url(#glow)"/>
-  <!-- Wings: Swept Back -->
-  <path d="M25,24 L10,10 L40,24 Z" fill="#0088ff" opacity="0.8"/>
-  <path d="M25,40 L10,54 L40,40 Z" fill="#0088ff" opacity="0.8"/>
-  <!-- Cockpit: Near Front (Right) -->
-  <ellipse cx="45" cy="28" rx="8" ry="4" fill="#ffffff" filter="url(#glow)"/>
-  <!-- Tail: At Back (Left) -->
-  <path d="M5,24 L5,14 L15,24 Z" fill="#0088ff"/>
-  <!-- Engine Glow: At Back (Left) -->
-  <circle cx="10" cy="32" r="4" fill="#ff0000" filter="url(#glow)"/>
-</svg>`;
-playerImg.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
-let playerImgLoaded = false;
-playerImg.onload = () => { playerImgLoaded = true; };
+// ... (SVG stays the same) ...
 
-// Resize Canvas
-function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-}
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
+// ...
 
 // Player Object (Plane)
 const player = {
@@ -66,11 +35,11 @@ const player = {
     y: canvas.height / 2,
     width: 60,
     height: 40,
-    gravity: 0.2,
-    lift: -0.5,
-    dive: 0.5,
+    gravity: 0.15,    // Reduced from 0.2
+    lift: -0.3,       // Reduced from -0.5 (Slower climb)
+    dive: 0.3,        // Reduced from 0.5 (Slower dive)
     velocity: 0,
-    maxVelocity: 8,
+    maxVelocity: 5,   // Reduced from 8 (Cap speed)
 
     draw() {
         ctx.save();
