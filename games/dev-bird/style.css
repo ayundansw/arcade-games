@@ -61,10 +61,46 @@ canvas {
     gap: 20px;
     justify-content: center;
     margin-top: 20px;
+    width: 100%;
 }
 
+.retry-btn,
 .back-btn {
     text-decoration: none;
-    font-size: 1.2rem;
-    padding: 15px 30px;
+    font-size: 1.1rem;
+    /* Standardized size */
+    padding: 15px 0;
+    width: 200px;
+    /* Fixed width for consistency */
+    text-align: center;
+    display: inline-block;
+    /* Ensure they behave like boxes */
+    border: 2px solid var(--neon-cyan);
+    color: var(--neon-cyan);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: var(--font-main);
+}
+
+.retry-btn:hover,
+.back-btn:hover {
+    background: var(--neon-cyan);
+    color: var(--bg-dark);
+    box-shadow: 0 0 20px var(--neon-cyan);
+}
+
+/* Countdown */
+.countdown-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 8rem;
+    font-family: 'Orbitron', sans-serif;
+    color: var(--neon-cyan);
+    text-shadow: 0 0 30px var(--neon-cyan);
+    z-index: 200;
+    display: none;
+    pointer-events: none;
 }
