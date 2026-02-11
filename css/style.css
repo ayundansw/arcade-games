@@ -84,17 +84,29 @@ body {
 /* Arcade Grid */
 .arcade-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 30px;
+  grid-template-columns: repeat(1, 1fr); /* Mobile default */
+  gap: 20px;
   padding: 20px 5%;
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
 }
 
+@media (min-width: 768px) {
+  .arcade-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1200px) {
+  .arcade-grid {
+    grid-template-columns: repeat(4, 1fr); /* Force 4 columns on desktop */
+  }
+}
+
 .game-card {
   position: relative;
-  height: 350px;
+  height: 280px; /* Reduced height to fit viewport */
   background: var(--glass-bg);
   border: 1px solid rgba(5, 217, 231, 0.2);
   text-decoration: none;
@@ -114,9 +126,19 @@ body {
 }
 
 .card-icon {
-  font-size: 4rem;
+  width: 64px;
+  height: 64px;
   margin-bottom: 20px;
+  margin-left: auto;
+  margin-right: auto;
   filter: drop-shadow(0 0 10px var(--neon-cyan));
+}
+
+.svg-icon {
+  width: 100%;
+  height: 100%;
+  stroke: var(--text-white);
+  stroke-width: 1.5;
 }
 
 .game-card h2 {

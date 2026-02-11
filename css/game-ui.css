@@ -15,7 +15,9 @@
   position: absolute;
   top: 20px;
   left: 20px;
-  background: transparent;
+  background: rgba(0, 0, 0, 0.6);
+  /* Added background for visibility */
+  backdrop-filter: blur(4px);
   border: 2px solid var(--neon-cyan);
   color: var(--neon-cyan);
   padding: 10px 20px;
@@ -67,7 +69,8 @@
 }
 
 .modal-title {
-  color: #FF4444; /* System Failure Red */
+  color: #FF4444;
+  /* System Failure Red */
   font-size: 2.5rem;
   margin-bottom: 20px;
   text-shadow: 0 0 10px #FF4444;

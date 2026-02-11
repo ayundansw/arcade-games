@@ -1,33 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Holo-Controller | RIT Arcade</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@300;400&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@300;400&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="../../css/variables.css">
     <link rel="stylesheet" href="../../css/game-ui.css">
     <link rel="stylesheet" href="style.css">
-    
+
     <!-- MediaPipe Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"
+        crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 </head>
+
 <body>
     <div class="game-container">
-        <a href="../../index.html" class="exit-btn">EXIT MODULE</a>
-        
+        <a href="../../index.html" class="exit-btn">KEMBALI KE MENU</a>
+
         <video id="input_video" class="input_video" playsinline></video>
         <canvas id="output_canvas" class="output_canvas"></canvas>
-        
+
         <div class="hud-overlay">
             <div class="target-display">
                 <p>TARGET</p>
                 <h1 id="targetNumber">?</h1>
             </div>
-            
+
             <div class="current-display">
                 <p>DETECTED</p>
                 <h2 id="detectedNumber">0</h2>
@@ -59,4 +65,5 @@
     </div>
     <script src="script.js"></script>
 </body>
+
 </html>
