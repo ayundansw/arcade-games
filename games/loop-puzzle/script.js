@@ -200,6 +200,9 @@ function updatePlayerSelect() {
     if (newCell) newCell.classList.add('player');
 }
 
+// Track if player started moving for monster spawn
+let hasStartedMoving = false;
+
 function handleInput(e) {
     if (isGameOver) return;
 

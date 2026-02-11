@@ -25,9 +25,31 @@ let liftInput = 0; // 0 = Neutral, 1 = Up (Open), -1 = Down (Fist)
 
 // Assets
 const playerImg = new Image();
-// ... (SVG stays the same) ...
+// Fallback: Inline SVG for transparent plane (Optimized, No Filters)
+const svgString = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- Main Fuselage: Pointing Right -->
+  <path d="M10,24 L45,24 L62,32 L45,40 L10,40 Z" fill="#00ffff" stroke="#0088ff" stroke-width="2"/>
+  <!-- Wings: Swept Back -->
+  <path d="M25,24 L10,10 L40,24 Z" fill="#0088ff" opacity="0.8"/>
+  <path d="M25,40 L10,54 L40,40 Z" fill="#0088ff" opacity="0.8"/>
+  <!-- Cockpit -->
+  <ellipse cx="45" cy="28" rx="8" ry="4" fill="#ffffff"/>
+  <!-- Tail -->
+  <path d="M5,24 L5,14 L15,24 Z" fill="#0088ff"/>
+  <!-- Engine -->
+  <circle cx="10" cy="32" r="4" fill="#ff0000"/>
+</svg>`;
+playerImg.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
+let playerImgLoaded = false;
+playerImg.onload = () => { playerImgLoaded = true; };
 
-// ...
+// Resize Canvas
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
 
 // Player Object (Plane)
 const player = {
@@ -35,11 +57,11 @@ const player = {
     y: canvas.height / 2,
     width: 60,
     height: 40,
-    gravity: 0.15,    // Reduced from 0.2
-    lift: -0.3,       // Reduced from -0.5 (Slower climb)
-    dive: 0.3,        // Reduced from 0.5 (Slower dive)
+    gravity: 0.15,
+    lift: -0.3,
+    dive: 0.3,
     velocity: 0,
-    maxVelocity: 5,   // Reduced from 8 (Cap speed)
+    maxVelocity: 5,
 
     draw() {
         ctx.save();
@@ -48,10 +70,8 @@ const player = {
         ctx.rotate(angle);
 
         if (playerImgLoaded) {
-            // Draw image to fit the dimensions
             ctx.drawImage(playerImg, -this.width / 2, -this.height / 2, this.width, this.height);
         } else {
-            // Fallback
             ctx.fillStyle = '#05d9e7';
             ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
         }
