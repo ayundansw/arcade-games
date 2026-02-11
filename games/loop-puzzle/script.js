@@ -203,6 +203,24 @@ function updatePlayerSelect() {
 function handleInput(e) {
     if (isGameOver) return;
 
+    // Start Monster Timer on first move
+    if (!hasStartedMoving && monsterActive) {
+        hasStartedMoving = true;
+        console.log("Player moved. Entity wakup timer started (10s)...");
+        setTimeout(() => {
+            if (isGameOver) return;
+            monsterPos = { r: 1, c: 1 };
+            updateMonsterVisuals();
+            console.log("Entity Spawned!");
+
+            // Slower Speed: 800ms (was 300ms)
+            let speed = 700;
+            if (level >= 3) speed = 600;
+
+            monsterInterval = setInterval(moveMonster, speed);
+        }, 10000); // 10s Delay
+    }
+
     let nextR = playerPos.r;
     let nextC = playerPos.c;
 
@@ -293,10 +311,34 @@ function handleGameOver(reason) {
     modalTitle.innerText = "DATA LOST";
     modalTitle.style.color = "#FF4444";
     modalScore.innerText = reason;
-    nextLevelBtn.innerText = "RETRY LEVEL";
 
-    // Retry resets the same level
-    nextLevelBtn.onclick = initGame;
+    // Update Layout for Buttons
+    // Clear previous buttons to avoid duplicates if re-running
+    const modalContent = winModal.querySelector('.modal-content');
+    let buttonContainer = winModal.querySelector('.button-container');
+    if (!buttonContainer) {
+        buttonContainer = document.createElement('div');
+        buttonContainer.className = 'button-container';
+        modalContent.appendChild(buttonContainer);
+    }
+    buttonContainer.innerHTML = ''; // Reset
+
+    const retryBtn = document.createElement('button');
+    retryBtn.className = 'retry-btn';
+    retryBtn.innerText = "RETRY LEVEL";
+    retryBtn.onclick = initGame;
+
+    const menuBtn = document.createElement('button');
+    menuBtn.className = 'exit-btn-modal';
+    menuBtn.innerText = "MAIN MENU";
+    menuBtn.onclick = () => window.location.href = '../../index.html';
+
+    buttonContainer.appendChild(retryBtn);
+    buttonContainer.appendChild(menuBtn);
+
+    // Remove default static button if it exists
+    const oldBtn = document.getElementById('nextLevelBtn');
+    if (oldBtn) oldBtn.remove();
 
     winModal.classList.add('active');
 }
@@ -310,14 +352,40 @@ function handleWin() {
     modalScore.innerText = `ESCAPED IN ${60 - timeRemaining}s`;
 
     level++;
-    nextLevelBtn.innerText = "NEXT LEVEL";
-    nextLevelBtn.onclick = initGame;
+
+    // Buttons
+    const modalContent = winModal.querySelector('.modal-content');
+    let buttonContainer = winModal.querySelector('.button-container');
+    if (!buttonContainer) {
+        buttonContainer = document.createElement('div');
+        buttonContainer.className = 'button-container';
+        modalContent.appendChild(buttonContainer);
+    }
+    buttonContainer.innerHTML = '';
+
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'retry-btn';
+    nextBtn.innerText = "NEXT LEVEL";
+    nextBtn.onclick = initGame;
+
+    const menuBtn = document.createElement('button');
+    menuBtn.className = 'exit-btn-modal';
+    menuBtn.innerText = "MAIN MENU";
+    menuBtn.onclick = () => window.location.href = '../../index.html';
+
+    buttonContainer.appendChild(nextBtn);
+    buttonContainer.appendChild(menuBtn);
+
+    // Remove default static button if it exists
+    const oldBtn = document.getElementById('nextLevelBtn');
+    if (oldBtn) oldBtn.remove();
 
     setTimeout(() => winModal.classList.add('active'), 200);
 }
 
 window.addEventListener('keydown', handleInput);
-nextLevelBtn.addEventListener('click', initGame);
+// Remove static listener for nextLevelBtn since we generate dynamic buttons
+// nextLevelBtn.addEventListener('click', initGame); 
 
 // Start
 initGame();

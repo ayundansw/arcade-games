@@ -130,6 +130,49 @@ body {
     }
 }
 
+/* Modal Buttons */
+.button-container {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.retry-btn,
+.exit-btn-modal {
+    padding: 10px 20px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.retry-btn {
+    background: var(--neon-cyan);
+    color: #000;
+    box-shadow: 0 0 10px var(--neon-cyan);
+}
+
+.retry-btn:hover {
+    background: #fff;
+    box-shadow: 0 0 20px var(--neon-cyan);
+}
+
+.exit-btn-modal {
+    background: transparent;
+    border: 2px solid #ff4444;
+    color: #ff4444;
+}
+
+.exit-btn-modal:hover {
+    background: #ff4444;
+    color: #000;
+    box-shadow: 0 0 15px #ff4444;
+}
+
 @keyframes pulse {
     from {
         opacity: 0.7;
