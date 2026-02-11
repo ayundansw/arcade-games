@@ -1,10 +1,16 @@
 const gridContainer = document.getElementById('grid-container');
 const winModal = document.getElementById('winModal');
 const nextLevelBtn = document.getElementById('nextLevelBtn');
+const timerElement = document.getElementById('timer');
+const modalTitle = winModal.querySelector('.modal-title');
+const modalScore = winModal.querySelector('.modal-score');
 
-const ROWS = 5;
-const COLS = 5;
+const ROWS = 4;
+const COLS = 4;
 let grid = [];
+let timerInterval;
+let timeRemaining = 60;
+let isGameOver = false;
 
 // Directions: 0: Up, 1: Right, 2: Down, 3: Left
 const DIRS = [
@@ -14,14 +20,12 @@ const DIRS = [
     { r: 0, c: -1 }  // Left
 ];
 
-// Tile Types and their connections (at rotation 0)
-// Connections are boolean array [Up, Right, Down, Left]
 const TILE_TYPES = {
-    'straight': [true, false, true, false], // Vertical
-    'corner':   [true, true, false, false], // Top-Right
-    't':        [true, true, true, false],  // Top-Right-Bottom
-    'cross':    [true, true, true, true],   // All
-    'empty':    [false, false, false, false]
+    'straight': [true, false, true, false],
+    'corner': [true, true, false, false],
+    't': [true, true, true, false],
+    'cross': [true, true, true, true],
+    'empty': [false, false, false, false]
 };
 
 class Tile {
@@ -29,28 +33,15 @@ class Tile {
         this.r = r;
         this.c = c;
         this.type = 'empty';
-        this.rotation = 0; // 0, 1, 2, 3 (x90deg)
+        this.rotation = 0;
         this.isPowered = false;
         this.element = null;
     }
 
-    // Get connections based on current rotation
     getConnections() {
         const base = TILE_TYPES[this.type];
-        // Rotate the boolean array 'this.rotation' times
-        // [U, R, D, L] -> Rotate 1 -> [L, U, R, D] (Shift Right)
-        // Wait, clockwise rotation:
-        // Original: Up(0), Right(1), Down(2), Left(3)
-        // Rot 1 (90deg): Up becomes Right. So new Right connects if old Up connected?
-        // No, visually: 
-        // Straight (Vert): [1,0,1,0]. Rot 1 (Horiz): [0,1,0,1].
-        // Logic: specific index i corresponds to direction i.
-        // After rot 1, the connection at index i comes from index (i - 1).
-        
         const rotated = [false, false, false, false];
         for (let i = 0; i < 4; i++) {
-            // The connection at direction i (New) comes from (i - rotation) (Old)
-            // Example: Rot 1. New Right (1) comes from Old Up (0).
             let oldIdx = (i - this.rotation + 4) % 4;
             rotated[i] = base[oldIdx];
         }
@@ -58,6 +49,7 @@ class Tile {
     }
 
     rotate() {
+        if (isGameOver) return;
         this.rotation = (this.rotation + 1) % 4;
         this.updateVisuals();
     }
@@ -69,15 +61,54 @@ class Tile {
         } else {
             this.element.classList.remove('powered');
         }
+
+        // Remove borders on connected sides to make it look seamless (Visual Trick)
+        // Actually, just keep lines thick enough.
     }
 }
 
 function initGame() {
+    isGameOver = false;
     winModal.classList.remove('active');
+
+    // Reset Timer
+    clearInterval(timerInterval);
+    timeRemaining = 60;
+    timerElement.innerText = `TIME: ${timeRemaining}s`;
+
     createGrid();
     generateLevel();
     renderGrid();
-    checkConnections(); // Initial check
+    checkConnections();
+
+    // Start Timer
+    timerInterval = setInterval(() => {
+        timeRemaining--;
+        timerElement.innerText = `TIME: ${timeRemaining}s`;
+        if (timeRemaining <= 0) {
+            handleGameOver();
+        }
+    }, 1000);
+}
+
+function handleGameOver() {
+    clearInterval(timerInterval);
+    isGameOver = true;
+    modalTitle.innerText = "SYSTEM FAILURE";
+    modalTitle.style.color = "#FF4444";
+    modalScore.innerText = "CONNECTION TIMED OUT";
+    nextLevelBtn.innerText = "RETRY SECTOR";
+    winModal.classList.add('active');
+}
+
+function handleWin() {
+    clearInterval(timerInterval);
+    isGameOver = true;
+    modalTitle.innerText = "SYSTEM ONLINE";
+    modalTitle.style.color = "var(--neon-cyan)";
+    modalScore.innerText = `RESTORED IN ${60 - timeRemaining}s`;
+    nextLevelBtn.innerText = "NEXT SECTOR";
+    setTimeout(() => winModal.classList.add('active'), 500);
 }
 
 function createGrid() {
@@ -94,87 +125,82 @@ function createGrid() {
 }
 
 function generateLevel() {
-    // 1. Generate a valid path from (0,0) to (4,4)
+    // 1. Generate a valid path
     let current = { r: 0, c: 0 };
     let path = [current];
     let visited = new Set(['0,0']);
-    
-    // Simple random walk towards target
+
+    // Force path to be a bit longer than Manhattan distance to make it interesting
+    // but not too long for 1 minute on 4x4
+
     while (current.r !== ROWS - 1 || current.c !== COLS - 1) {
         let candidates = [];
-        
-        // Try all neighbors
         for (let i = 0; i < 4; i++) {
             let nr = current.r + DIRS[i].r;
             let nc = current.c + DIRS[i].c;
-            
             if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && !visited.has(`${nr},${nc}`)) {
                 candidates.push({ r: nr, c: nc });
             }
         }
-        
-        // Bias towards Bottom-Right to ensure progress
+
         candidates.sort((a, b) => {
             let distA = (ROWS - 1 - a.r) + (COLS - 1 - a.c);
             let distB = (ROWS - 1 - b.r) + (COLS - 1 - b.c);
-            return distA - distB + (Math.random() * 2 - 1); // Slight randomness
+            // More randomness
+            return distA - distB + (Math.random() * 4 - 2);
         });
 
         if (candidates.length === 0) {
-            // Stuck? Restart generation (Primitive backtracking)
-            return generateLevel();
+            return generateLevel(); // Retry
         }
 
-        // Pick top candidate
         let next = candidates[0];
         path.push(next);
         visited.add(`${next.r},${next.c}`);
         current = next;
     }
 
-    // 2. Set Tile Types based on path connections
+    // 2. Set Types
     for (let i = 0; i < path.length; i++) {
         let r = path[i].r;
         let c = path[i].c;
         let connections = [false, false, false, false];
 
-        // Check Previous
         if (i > 0) {
-            let pr = path[i-1].r;
-            let pc = path[i-1].c;
-            if (pr < r) connections[0] = true; // Up
-            if (pc > c) connections[1] = true; // Right
-            if (pr > r) connections[2] = true; // Down
-            if (pc < c) connections[3] = true; // Left
+            let pr = path[i - 1].r;
+            let pc = path[i - 1].c;
+            if (pr < r) connections[0] = true;
+            if (pc > c) connections[1] = true;
+            if (pr > r) connections[2] = true;
+            if (pc < c) connections[3] = true;
         } else {
-             // Start Node: Force connect to next
+            // START: Ensure it connects to next
+            // We'll treat Start (0,0) specifically.
         }
 
-        // Check Next
         if (i < path.length - 1) {
-            let nr = path[i+1].r;
-            let nc = path[i+1].c;
+            let nr = path[i + 1].r;
+            let nc = path[i + 1].c;
             if (nr < r) connections[0] = true;
             if (nc > c) connections[1] = true;
             if (nr > r) connections[2] = true;
             if (nc < c) connections[3] = true;
         }
 
-        // Determine Type from connections
         grid[r][c].type = getTypeFromConnections(connections);
     }
 
-    // 3. Fill random noise for non-path tiles
+    // 3. Fill noise
     for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
             if (grid[r][c].type === 'empty') {
-                const types = ['straight', 'corner', 't', 'cross'];
+                const types = ['straight', 'corner', 'corner', 't']; // Fewer crosses, more corners
                 grid[r][c].type = types[Math.floor(Math.random() * types.length)];
             }
         }
     }
 
-    // 4. Scramble Rotations
+    // 4. Scramble
     for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
             grid[r][c].rotation = Math.floor(Math.random() * 4);
@@ -183,19 +209,10 @@ function generateLevel() {
 }
 
 function getTypeFromConnections(conns) {
-    // conns: [U, R, D, L]
     const count = conns.filter(x => x).length;
-    
-    // Start/End might have 1 connection in logic, but visuals need 2? 
-    // Actually, let's just default Start/End to having an "Open" end or make them Corner/Straight
-    // The path logic sets connections. If only 1 connection (Start/End), we can pick a Straight or Corner that satisfies it.
-    
     if (count <= 2) {
-        // Check Straight
         if ((conns[0] && conns[2]) || (conns[1] && conns[3])) return 'straight';
-        // Otherwise Corner
-        return 'corner'; 
-        // (Visual logic handles rotation, we just need a shape that CAN support these connections)
+        return 'corner';
     }
     if (count === 3) return 't';
     return 'cross';
@@ -208,7 +225,7 @@ function renderGrid() {
             const el = document.createElement('div');
             el.classList.add('tile');
             el.dataset.type = tile.type;
-            
+
             if (r === 0 && c === 0) el.classList.add('start');
             if (r === ROWS - 1 && c === COLS - 1) el.classList.add('end');
 
@@ -225,6 +242,8 @@ function renderGrid() {
 }
 
 function checkConnections() {
+    if (isGameOver) return;
+
     // Reset Power
     for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
@@ -232,41 +251,52 @@ function checkConnections() {
         }
     }
 
-    // BFS from Start (0,0)
-    // Assume Start is powered coming from "Top" or just always powered
-    let queue = [{r: 0, c: 0}];
+    // BFS
+    let queue = [{ r: 0, c: 0 }];
     grid[0][0].isPowered = true;
-    
     let reachedEnd = false;
 
-    while(queue.length > 0) {
+    // Start Node special logic: It needs to be rotated such that it connects to its powered neighbor?
+    // Actually, let's just say 0,0 is ALWAYS powered.
+    // AND we need to check if it connects to neighbors visually.
+
+    // Re-implementation of BFS to respect rotation
+    // Clear queue, start fresh
+    // 0,0 is source.
+
+    // We need to trace flow.
+    // If Tile A connects to B, AND Tile B connects to A, then flow passes.
+
+    // Let's assume input comes into (0,0) from the LEFT (imaginary).
+    // So (0,0) must have a LEFT connection? No, just treat (0,0) as a source.
+
+    queue = [{ r: 0, c: 0 }];
+    let visited = new Set(['0,0']);
+
+    while (queue.length > 0) {
         let curr = queue.shift();
         let tile = grid[curr.r][curr.c];
-        let conns = tile.getConnections(); // [U, R, D, L]
 
         if (curr.r === ROWS - 1 && curr.c === COLS - 1) {
             reachedEnd = true;
         }
 
-        // Check Neighbors
+        let conns = tile.getConnections(); // [U, R, D, L]
+
         for (let i = 0; i < 4; i++) {
             if (conns[i]) {
                 let nr = curr.r + DIRS[i].r;
                 let nc = curr.c + DIRS[i].c;
-                
+
                 if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
                     let neighbor = grid[nr][nc];
-                    if (!neighbor.isPowered) {
-                        // Check if neighbor connects back
-                        let nConns = neighbor.getConnections();
-                        // Neighbor's opposite direction must be true
-                        // 0(U) <-> 2(D), 1(R) <-> 3(L)
-                        let opposite = (i + 2) % 4;
-                        
-                        if (nConns[opposite]) {
-                            neighbor.isPowered = true;
-                            queue.push({r: nr, c: nc});
-                        }
+                    let nConns = neighbor.getConnections();
+                    let opposite = (i + 2) % 4;
+
+                    if (nConns[opposite] && !visited.has(`${nr},${nc}`)) {
+                        queue.push({ r: nr, c: nc });
+                        visited.add(`${nr},${nc}`);
+                        neighbor.isPowered = true;
                     }
                 }
             }
@@ -280,8 +310,8 @@ function checkConnections() {
         }
     }
 
-    if (reachedEnd) {
-        setTimeout(() => winModal.classList.add('active'), 500);
+    if (reachedEnd && !isGameOver) {
+        handleWin();
     }
 }
 
