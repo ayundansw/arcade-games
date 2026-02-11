@@ -5,67 +5,26 @@ const timerElement = document.getElementById('timer');
 const modalTitle = winModal.querySelector('.modal-title');
 const modalScore = winModal.querySelector('.modal-score');
 
-const ROWS = 4;
-const COLS = 4;
-let grid = [];
+// Config
+const ROWS = 21; // Odd number for better maze generation
+const COLS = 21;
+const CELL_SIZE = 25; // px
+
+let maze = [];
+let playerPos = { r: 1, c: 1 };
+let goalPos = { r: ROWS - 2, c: COLS - 2 };
 let timerInterval;
 let timeRemaining = 60;
 let isGameOver = false;
 
-// Directions: 0: Up, 1: Right, 2: Down, 3: Left
-const DIRS = [
-    { r: -1, c: 0 }, // Up
-    { r: 0, c: 1 },  // Right
-    { r: 1, c: 0 },  // Down
-    { r: 0, c: -1 }  // Left
+// Directions for Generator & Movement
+// [dr, dc]
+const DIRECTIONS = [
+    [-1, 0], // Up
+    [1, 0],  // Down
+    [0, -1], // Left
+    [0, 1]   // Right
 ];
-
-const TILE_TYPES = {
-    'straight': [true, false, true, false],
-    'corner': [true, true, false, false],
-    't': [true, true, true, false],
-    'cross': [true, true, true, true],
-    'empty': [false, false, false, false]
-};
-
-class Tile {
-    constructor(r, c) {
-        this.r = r;
-        this.c = c;
-        this.type = 'empty';
-        this.rotation = 0;
-        this.isPowered = false;
-        this.element = null;
-    }
-
-    getConnections() {
-        const base = TILE_TYPES[this.type];
-        const rotated = [false, false, false, false];
-        for (let i = 0; i < 4; i++) {
-            let oldIdx = (i - this.rotation + 4) % 4;
-            rotated[i] = base[oldIdx];
-        }
-        return rotated;
-    }
-
-    rotate() {
-        if (isGameOver) return;
-        this.rotation = (this.rotation + 1) % 4;
-        this.updateVisuals();
-    }
-
-    updateVisuals() {
-        this.element.style.transform = `rotate(${this.rotation * 90}deg)`;
-        if (this.isPowered) {
-            this.element.classList.add('powered');
-        } else {
-            this.element.classList.remove('powered');
-        }
-
-        // Remove borders on connected sides to make it look seamless (Visual Trick)
-        // Actually, just keep lines thick enough.
-    }
-}
 
 function initGame() {
     isGameOver = false;
@@ -75,246 +34,179 @@ function initGame() {
     clearInterval(timerInterval);
     timeRemaining = 60;
     timerElement.innerText = `TIME: ${timeRemaining}s`;
+    timerElement.style.color = "var(--neon-cyan)";
 
-    createGrid();
-    generateLevel();
-    renderGrid();
-    checkConnections();
+    // Update Grid CSS dynamically
+    gridContainer.style.gridTemplateColumns = `repeat(${COLS}, ${CELL_SIZE}px)`;
+    gridContainer.style.gridTemplateRows = `repeat(${ROWS}, ${CELL_SIZE}px)`;
+    gridContainer.style.width = `${COLS * CELL_SIZE}px`;
+
+    generateMaze();
+    renderMaze();
 
     // Start Timer
     timerInterval = setInterval(() => {
+        if (isGameOver) return;
         timeRemaining--;
         timerElement.innerText = `TIME: ${timeRemaining}s`;
+
+        if (timeRemaining <= 10) {
+            timerElement.style.color = "#FF4444";
+        }
+
         if (timeRemaining <= 0) {
             handleGameOver();
         }
     }, 1000);
 }
 
+function generateMaze() {
+    // 1. Initialize filled grid (all walls)
+    maze = [];
+    for (let r = 0; r < ROWS; r++) {
+        let row = [];
+        for (let c = 0; c < COLS; c++) {
+            row.push(1); // 1 = Wall, 0 = Path
+        }
+        maze.push(row);
+    }
+
+    // 2. Recursive Backtracker
+    // Start at (1,1)
+    const stack = [{ r: 1, c: 1 }];
+    maze[1][1] = 0;
+
+    while (stack.length > 0) {
+        let current = stack[stack.length - 1];
+        let neighbors = [];
+
+        // Check neighbors (jump 2 steps to preserve walls)
+        for (let i = 0; i < 4; i++) {
+            let dr = DIRECTIONS[i][0];
+            let dc = DIRECTIONS[i][1];
+            let nr = current.r + (dr * 2);
+            let nc = current.c + (dc * 2);
+
+            if (nr > 0 && nr < ROWS - 1 && nc > 0 && nc < COLS - 1 && maze[nr][nc] === 1) {
+                neighbors.push({ r: nr, c: nc, dr: dr, dc: dc });
+            }
+        }
+
+        if (neighbors.length > 0) {
+            // Choose random neighbor
+            let next = neighbors[Math.floor(Math.random() * neighbors.length)];
+
+            // Remove wall between current and next
+            maze[current.r + next.dr][current.c + next.dc] = 0;
+
+            // Mark next as visited
+            maze[next.r][next.c] = 0;
+
+            stack.push({ r: next.r, c: next.c });
+        } else {
+            stack.pop();
+        }
+    }
+
+    // Reset Player
+    playerPos = { r: 1, c: 1 };
+
+    // Set Goal at bottom right (ensure it's a path)
+    goalPos = { r: ROWS - 2, c: COLS - 2 };
+    // Force open if wall
+    if (maze[goalPos.r][goalPos.c] === 1) {
+        maze[goalPos.r][goalPos.c] = 0;
+        // Ensure connectivity if we forced a hole (simple fix: open neighbor)
+        if (maze[goalPos.r - 1][goalPos.c] === 1 && maze[goalPos.r][goalPos.c - 1] === 1) {
+            maze[goalPos.r - 1][goalPos.c] = 0;
+        }
+    }
+}
+
+function renderMaze() {
+    gridContainer.innerHTML = '';
+
+    for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+            const cell = document.createElement('div');
+            cell.classList.add('cell');
+
+            if (maze[r][c] === 1) {
+                cell.classList.add('wall');
+            } else {
+                cell.classList.add('path');
+            }
+
+            // Markers
+            if (r === playerPos.r && c === playerPos.c) {
+                cell.classList.add('player');
+            }
+            if (r === goalPos.r && c === goalPos.c) {
+                cell.classList.add('goal');
+            }
+
+            cell.id = `cell-${r}-${c}`;
+            gridContainer.appendChild(cell);
+        }
+    }
+}
+
+function updatePlayerSelect() {
+    const playerCells = document.querySelectorAll('.cell.player');
+    playerCells.forEach(el => el.classList.remove('player'));
+
+    const newCell = document.getElementById(`cell-${playerPos.r}-${playerPos.c}`);
+    if (newCell) newCell.classList.add('player');
+}
+
+function handleInput(e) {
+    if (isGameOver) return;
+
+    let nextR = playerPos.r;
+    let nextC = playerPos.c;
+
+    switch (e.key) {
+        case 'ArrowUp': nextR--; break;
+        case 'ArrowDown': nextR++; break;
+        case 'ArrowLeft': nextC--; break;
+        case 'ArrowRight': nextC++; break;
+        default: return;
+    }
+    e.preventDefault();
+
+    if (nextR < 0 || nextR >= ROWS || nextC < 0 || nextC >= COLS) return;
+    if (maze[nextR][nextC] === 1) return; // Wall
+
+    playerPos.r = nextR;
+    playerPos.c = nextC;
+    updatePlayerSelect();
+
+    if (playerPos.r === goalPos.r && playerPos.c === goalPos.c) {
+        handleWin();
+    }
+}
+
 function handleGameOver() {
     clearInterval(timerInterval);
     isGameOver = true;
-    modalTitle.innerText = "SYSTEM FAILURE";
+    modalTitle.innerText = "DATA LOST";
     modalTitle.style.color = "#FF4444";
-    modalScore.innerText = "CONNECTION TIMED OUT";
-    nextLevelBtn.innerText = "RETRY SECTOR";
+    modalScore.innerText = "TIME OUT";
+    nextLevelBtn.innerText = "RETRY EXTRACTION";
     winModal.classList.add('active');
 }
 
 function handleWin() {
     clearInterval(timerInterval);
     isGameOver = true;
-    modalTitle.innerText = "SYSTEM ONLINE";
+    modalTitle.innerText = "EXTRACTION COMPLETE";
     modalTitle.style.color = "var(--neon-cyan)";
-    modalScore.innerText = `RESTORED IN ${60 - timeRemaining}s`;
+    modalScore.innerText = `REMAINING TIME: ${timeRemaining}s`;
     nextLevelBtn.innerText = "NEXT SECTOR";
-    setTimeout(() => winModal.classList.add('active'), 500);
+    setTimeout(() => winModal.classList.add('active'), 200);
 }
 
-function createGrid() {
-    grid = [];
-    gridContainer.innerHTML = '';
-    for (let r = 0; r < ROWS; r++) {
-        let row = [];
-        for (let c = 0; c < COLS; c++) {
-            let tile = new Tile(r, c);
-            row.push(tile);
-        }
-        grid.push(row);
-    }
-}
-
-function generateLevel() {
-    // 1. Generate a valid path
-    let current = { r: 0, c: 0 };
-    let path = [current];
-    let visited = new Set(['0,0']);
-
-    // Force path to be a bit longer than Manhattan distance to make it interesting
-    // but not too long for 1 minute on 4x4
-
-    while (current.r !== ROWS - 1 || current.c !== COLS - 1) {
-        let candidates = [];
-        for (let i = 0; i < 4; i++) {
-            let nr = current.r + DIRS[i].r;
-            let nc = current.c + DIRS[i].c;
-            if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && !visited.has(`${nr},${nc}`)) {
-                candidates.push({ r: nr, c: nc });
-            }
-        }
-
-        candidates.sort((a, b) => {
-            let distA = (ROWS - 1 - a.r) + (COLS - 1 - a.c);
-            let distB = (ROWS - 1 - b.r) + (COLS - 1 - b.c);
-            // More randomness
-            return distA - distB + (Math.random() * 4 - 2);
-        });
-
-        if (candidates.length === 0) {
-            return generateLevel(); // Retry
-        }
-
-        let next = candidates[0];
-        path.push(next);
-        visited.add(`${next.r},${next.c}`);
-        current = next;
-    }
-
-    // 2. Set Types
-    for (let i = 0; i < path.length; i++) {
-        let r = path[i].r;
-        let c = path[i].c;
-        let connections = [false, false, false, false];
-
-        if (i > 0) {
-            let pr = path[i - 1].r;
-            let pc = path[i - 1].c;
-            if (pr < r) connections[0] = true;
-            if (pc > c) connections[1] = true;
-            if (pr > r) connections[2] = true;
-            if (pc < c) connections[3] = true;
-        } else {
-            // START: Ensure it connects to next
-            // We'll treat Start (0,0) specifically.
-        }
-
-        if (i < path.length - 1) {
-            let nr = path[i + 1].r;
-            let nc = path[i + 1].c;
-            if (nr < r) connections[0] = true;
-            if (nc > c) connections[1] = true;
-            if (nr > r) connections[2] = true;
-            if (nc < c) connections[3] = true;
-        }
-
-        grid[r][c].type = getTypeFromConnections(connections);
-    }
-
-    // 3. Fill noise
-    for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-            if (grid[r][c].type === 'empty') {
-                const types = ['straight', 'corner', 'corner', 't']; // Fewer crosses, more corners
-                grid[r][c].type = types[Math.floor(Math.random() * types.length)];
-            }
-        }
-    }
-
-    // 4. Scramble
-    for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-            grid[r][c].rotation = Math.floor(Math.random() * 4);
-        }
-    }
-}
-
-function getTypeFromConnections(conns) {
-    const count = conns.filter(x => x).length;
-    if (count <= 2) {
-        if ((conns[0] && conns[2]) || (conns[1] && conns[3])) return 'straight';
-        return 'corner';
-    }
-    if (count === 3) return 't';
-    return 'cross';
-}
-
-function renderGrid() {
-    for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-            const tile = grid[r][c];
-            const el = document.createElement('div');
-            el.classList.add('tile');
-            el.dataset.type = tile.type;
-
-            if (r === 0 && c === 0) el.classList.add('start');
-            if (r === ROWS - 1 && c === COLS - 1) el.classList.add('end');
-
-            el.addEventListener('click', () => {
-                tile.rotate();
-                checkConnections();
-            });
-
-            gridContainer.appendChild(el);
-            tile.element = el;
-            tile.updateVisuals();
-        }
-    }
-}
-
-function checkConnections() {
-    if (isGameOver) return;
-
-    // Reset Power
-    for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-            grid[r][c].isPowered = false;
-        }
-    }
-
-    // BFS
-    let queue = [{ r: 0, c: 0 }];
-    grid[0][0].isPowered = true;
-    let reachedEnd = false;
-
-    // Start Node special logic: It needs to be rotated such that it connects to its powered neighbor?
-    // Actually, let's just say 0,0 is ALWAYS powered.
-    // AND we need to check if it connects to neighbors visually.
-
-    // Re-implementation of BFS to respect rotation
-    // Clear queue, start fresh
-    // 0,0 is source.
-
-    // We need to trace flow.
-    // If Tile A connects to B, AND Tile B connects to A, then flow passes.
-
-    // Let's assume input comes into (0,0) from the LEFT (imaginary).
-    // So (0,0) must have a LEFT connection? No, just treat (0,0) as a source.
-
-    queue = [{ r: 0, c: 0 }];
-    let visited = new Set(['0,0']);
-
-    while (queue.length > 0) {
-        let curr = queue.shift();
-        let tile = grid[curr.r][curr.c];
-
-        if (curr.r === ROWS - 1 && curr.c === COLS - 1) {
-            reachedEnd = true;
-        }
-
-        let conns = tile.getConnections(); // [U, R, D, L]
-
-        for (let i = 0; i < 4; i++) {
-            if (conns[i]) {
-                let nr = curr.r + DIRS[i].r;
-                let nc = curr.c + DIRS[i].c;
-
-                if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
-                    let neighbor = grid[nr][nc];
-                    let nConns = neighbor.getConnections();
-                    let opposite = (i + 2) % 4;
-
-                    if (nConns[opposite] && !visited.has(`${nr},${nc}`)) {
-                        queue.push({ r: nr, c: nc });
-                        visited.add(`${nr},${nc}`);
-                        neighbor.isPowered = true;
-                    }
-                }
-            }
-        }
-    }
-
-    // Update Visuals
-    for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-            grid[r][c].updateVisuals();
-        }
-    }
-
-    if (reachedEnd && !isGameOver) {
-        handleWin();
-    }
-}
-
+window.addEventListener('keydown', handleInput);
 nextLevelBtn.addEventListener('click', initGame);
 
 // Start
