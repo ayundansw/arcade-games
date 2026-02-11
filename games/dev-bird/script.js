@@ -56,8 +56,10 @@ const player = {
         ctx.rotate(angle);
 
         if (playerImgLoaded) {
+            // Draw image to fit the dimensions
             ctx.drawImage(playerImg, -this.width / 2, -this.height / 2, this.width, this.height);
         } else {
+            // Fallback
             ctx.fillStyle = '#05d9e7';
             ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
         }
