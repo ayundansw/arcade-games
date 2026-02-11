@@ -4,28 +4,31 @@ body {
     justify-content: center;
     align-items: center;
     height: 100vh;
+    width: 100vw;
     margin: 0;
+    overflow: hidden;
+    /* Prevent scrolling */
 }
 
 .game-container {
     display: flex;
     flex-direction: row;
     /* Horizontal layout */
-    align-items: flex-start;
-    gap: 30px;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
     position: relative;
-    padding: 20px;
+    padding: 30px;
     border: 2px solid var(--neon-cyan);
-    border-radius: 10px;
-    background: rgba(0, 0, 0, 0.8);
-    box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
+    border-radius: 15px;
+    background: rgba(0, 0, 0, 0.9);
+    box-shadow: 0 0 40px rgba(0, 255, 255, 0.15);
+    max-width: 90%;
+    max-height: 90vh;
 }
 
 .hud-panel {
-    position: relative;
-    /* Not absolute anymore */
-    top: auto;
-    width: 250px;
+    width: 280px;
     text-align: left;
     color: var(--text-white);
     display: flex;
@@ -34,27 +37,31 @@ body {
 }
 
 .hud-panel h2 {
-    font-size: 1.8rem;
+    font-size: 2rem;
     margin-bottom: 20px;
     color: var(--neon-cyan);
+    text-transform: uppercase;
+    letter-spacing: 2px;
     text-shadow: 0 0 10px var(--neon-cyan);
 }
 
 .hud-panel p {
-    font-size: 0.9rem;
-    color: #ccc;
-    line-height: 1.5;
+    font-size: 1rem;
+    color: #eee;
+    line-height: 1.6;
     margin-bottom: 30px;
 }
 
 .timer-display {
-    font-size: 2rem;
+    font-size: 2.2rem;
     color: #fff;
-    padding: 10px;
-    border: 1px solid var(--neon-cyan);
-    border-radius: 5px;
-    background: rgba(0, 255, 255, 0.1);
+    padding: 15px;
+    border: 2px solid var(--neon-cyan);
+    border-radius: 8px;
+    background: rgba(0, 255, 255, 0.05);
     text-align: center;
+    font-weight: bold;
+    box-shadow: inset 0 0 15px rgba(0, 255, 255, 0.1);
 }
 
 .grid-container {
@@ -63,16 +70,18 @@ body {
     gap: 0;
     padding: 10px;
     background: #000;
-    border: 2px solid var(--bg-panel);
+    border: 2px solid #333;
     border-radius: 5px;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
 }
 
 .cell {
-    width: 25px;
+    width: 20px;
     /* Adjust based on grid size */
-    height: 25px;
+    height: 20px;
     box-sizing: border-box;
+    position: relative;
+    /* For z-index context */
 }
 
 .cell.wall {
@@ -94,6 +103,31 @@ body {
     background: #00FF00;
     box-shadow: 0 0 10px #00FF00;
     animation: pulse 1s infinite alternate;
+}
+
+/* Monster Style - HIGH VISIBILITY */
+.cell.monster {
+    background-color: #FF0000 !important;
+    background-image: radial-gradient(circle, #ff4444 30%, #990000 100%);
+    box-shadow: 0 0 15px #FF0000, 0 0 30px #FF0000;
+    border-radius: 50%;
+    z-index: 100;
+    /* Ensure on top */
+    transform: scale(0.8);
+    /* Slightly smaller than cell to see movement better */
+    animation: monsterPulse 0.5s infinite alternate;
+}
+
+@keyframes monsterPulse {
+    from {
+        transform: scale(0.8);
+        opacity: 0.9;
+    }
+
+    to {
+        transform: scale(1.0);
+        opacity: 1;
+    }
 }
 
 @keyframes pulse {

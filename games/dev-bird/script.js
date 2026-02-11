@@ -25,7 +25,7 @@ let liftInput = 0; // 0 = Neutral, 1 = Up (Open), -1 = Down (Fist)
 
 // Assets
 const playerImg = new Image();
-playerImg.src = './pesawat_transparent.png'; // Generated transparent sprite
+playerImg.src = './pesawat_transparent.png';
 let playerImgLoaded = false;
 playerImg.onload = () => { playerImgLoaded = true; };
 
