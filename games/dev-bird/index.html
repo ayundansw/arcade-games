@@ -4,13 +4,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dev-Bird | RIT Arcade</title>
+    <title>Dev-Plane | RIT Arcade</title>
     <link
         href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@300;400&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="../../css/variables.css">
     <link rel="stylesheet" href="../../css/game-ui.css">
     <link rel="stylesheet" href="style.css">
+
+    <!-- MediaPipe Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 </head>
 
 <body>
@@ -23,11 +31,21 @@
 
         <canvas id="gameCanvas"></canvas>
 
+        <!-- Webcam Feedback (PIP) -->
+        <video id="input_video" class="input_video" playsinline style="display:none"></video>
+        <div class="cam-pip">
+            <canvas id="pip_canvas" width="320" height="240"></canvas>
+            <div class="gesture-icon" id="gestureIcon">✋</div>
+        </div>
+
         <div id="gameOverModal" class="modal-overlay">
             <div class="modal-content">
                 <h2 class="modal-title">SYSTEM FAILURE</h2>
                 <p class="modal-score">FINAL SCORE: <span id="finalScore">0</span></p>
-                <button id="retryBtn" class="retry-btn">REBOOT SYSTEM</button>
+                <div class="modal-buttons">
+                    <button id="retryBtn" class="retry-btn">REBOOT SYSTEM</button>
+                    <a href="../../index.html" class="retry-btn back-btn">KEMBALI KE MENU</a>
+                </div>
             </div>
         </div>
     </div>
