@@ -6,19 +6,6 @@ const modal = document.getElementById('gameOverModal');
 const retryBtn = document.getElementById('retryBtn');
 const countdownEl = document.getElementById('countdown');
 
-// EMERGENCY DEBUG: Catch all errors
-window.onerror = function (message, source, lineno, colno, error) {
-    alert("GAME ERROR:\n" + message + "\nLine: " + lineno);
-    // Also try to show it on screen
-    if (scoreElement) scoreElement.innerText = "ERR: " + lineno;
-};
-
-// Webcam & PIP
-const videoElement = document.getElementById('input_video');
-const pipCanvas = document.getElementById('pip_canvas');
-const pipCtx = pipCanvas.getContext('2d');
-const gestureIcon = document.getElementById('gestureIcon');
-
 // Game State
 let animationId;
 let frames = 0;
@@ -112,7 +99,8 @@ const player = {
     }
 };
 
-// Coins
+// Coins & Obstacles
+const obstacles = [];
 const coins = [];
 const coinImg = new Image();
 const coinSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
