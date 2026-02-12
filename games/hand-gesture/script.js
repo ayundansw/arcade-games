@@ -9,6 +9,7 @@ const retryBtn = document.getElementById('retryBtn');
 
 const countdownOverlay = document.getElementById('countdown-overlay');
 const countdownNumber = document.getElementById('countdown-number');
+const timeEl = document.getElementById('time');
 
 // Game State
 let isGameActive = false;
