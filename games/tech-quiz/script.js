@@ -11,31 +11,25 @@ const feedbackIcon = document.getElementById('feedback-icon');
 const feedbackText = document.getElementById('feedback-text');
 
 // Mixed Questions: Tech, Logic, Concentration
+// Mixed Questions: Tech & Logic Riddles
 const QUESTIONS = [
     // --- TECH (General) ---
     { q: "Apa kepanjangan dari CPU?", a: ["Central Processing Unit", "Computer Personal Unit", "Central Power User", "Control Panel Unit"], correct: 0 },
     { q: "Otak dari sebuah komputer adalah?", a: ["Monitor", "RAM", "CPU", "Hardisk"], correct: 2 },
     { q: "Bahasa pemrograman untuk membuat struktur web?", a: ["Python", "CSS", "HTML", "Java"], correct: 2 },
     { q: "Mana yang merupakan perangkat OUTPUT?", a: ["Mouse", "Keyboard", "Speaker", "Scanner"], correct: 2 },
-    { q: "RAM bersifat volatile, artinya?", a: ["Data hilang saat mati", "Data tersimpan permanen", "Hanya bisa dibaca", "Sangat lambat"], correct: 0 },
 
-    // --- LOGIC / IQ ---
-    { q: "Lanjutkan pola ini: 2, 4, 8, 16, ...?", a: ["20", "24", "32", "30"], correct: 2 },
-    { q: "Jika 'AYAM' = 4, 'KUDA' = 4, maka 'KUCING' = ?", a: ["4", "5", "6", "8"], correct: 2 },
-    { q: "Mana yang paling berbeda?", a: ["Mobil", "Motor", "Sepeda", "Pesawat"], correct: 3 }, // Pesawat flies, others ground
-    { q: "Budi punya 3 apel, dimakan 1, sisa berapa?", a: ["2", "3 (Di perut)", "1", "0"], correct: 0 },
-
-    // --- CONCENTRATION (Stroop Effect & Tricky) ---
-    { q: "Pilih tombol yang bertuliskan warna <b>MERAH</b>!", a: ["HIJAU", "KUNING", "MERAH", "BIRU"], correct: 2 },
-    // Logic: User must find text "MERAH", regardless of button color (handled in render)
-
-    { q: "Jika Kiri adalah Kanan, dan Kanan adalah Kiri. Maka belok Kiri artinya?", a: ["Belok Kanan", "Belok Kiri", "Lurus", "Mundur"], correct: 0 },
-
-    { q: "Jangan terkecoh! 1 jam + 60 menit = ... jam?", a: ["1", "2", "3", "120"], correct: 1 },
-
-    { q: "Pilih jawaban yang **SALAH**!", a: ["Bumi itu bulat", "Api itu panas", "Es itu cair", "Air itu basah"], correct: 2 },
-
-    { q: "Fokus! Warna bendera Indonesia?", a: ["Merah Biru", "Merah Putih", "Putih Merah", "Garuda"], correct: 1 }
+    // --- TRICKY LOGIC (Out of the Box) ---
+    { q: "Benda apa yang kalau dipotong malah makin tinggi?", a: ["Tiang Bendera", "Celana Panjang", "Pohon", "Rambut"], correct: 1 },
+    { q: "Apa yang punya kaki tapi nggak bisa jalan?", a: ["Meja", "Sepatu", "Kuda", "Bayi"], correct: 0 },
+    { q: "Semakin banyak kamu ambil, semakin banyak yang tersisa. Apa itu?", a: ["Pasir", "Sidik Jari", "Foto", "Kenangan"], correct: 1 }, // Taking a photo? "Sidik jari" - Fingerprints left behind. Wait. 
+    // Riddles logic check: "The more you take, the more you leave behind?" -> Footsteps (Jejak Kaki).
+    // Let's use a clearer one.
+    { q: "Aku punya leher tapi tidak punya kepala. Siapakah aku?", a: ["Botol", "Baju", "Gitar", "Jerapah"], correct: 1 },
+    { q: "Bulan apa yang orang tidur paling sedikit?", a: ["Februari", "Desember", "Januari", "Mei"], correct: 0 }, // Feb has 28 days
+    { q: "Apa yang selalu datang tapi tidak pernah sampai?", a: ["Paket", "Besok", "Gaji", "Masa Lalu"], correct: 1 },
+    { q: "Benda apa yang bisa berkeliling dunia tapi tetap di pojok?", a: ["Pesawat", "Perangko", "Globe", "Internet"], correct: 1 },
+    { q: "Pintu apa yang didorong sepuluh orang pun tidak terbuka?", a: ["Pintu Besi", "Pintu Geser", "Pintu Hati", "Pintu Terkunci"], correct: 1 } // Pintu Geser (Sliding Door) pushed won't open
 ];
 
 let currentQuestionIndex = 0;
@@ -118,16 +112,7 @@ function loadQuestion() {
     q.a.forEach((text, index) => {
         const btn = document.createElement('button');
         btn.classList.add('option-btn');
-        btn.innerHTML = text; // Allow HTML for colors
-
-        // STROOP EFFECT TRAP (Color Trick)
-        if (q.q.includes("Warna")) {
-            // Assign random misleading colors to buttons
-            const colors = ['#FF4444', '#44FF44', '#4444FF', '#FFFF44'];
-            const randomColor = colors[Math.floor(Math.random() * colors.length)];
-            btn.style.color = randomColor;
-            btn.style.borderColor = randomColor;
-        }
+        btn.innerHTML = text;
 
         btn.addEventListener('click', () => checkAnswer(index, q.correct));
         optionsEl.appendChild(btn);

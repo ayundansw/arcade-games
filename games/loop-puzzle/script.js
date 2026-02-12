@@ -61,6 +61,11 @@ function initGame() {
     winModal.classList.remove('active');
 
     // ... (rest of initGame logic) ...
+    // Reset spawn logic
+    stepsTaken = 0;
+    monsterSpawned = false;
+    monsterPos = { r: -1, c: -1 };
+
     clearInterval(timerInterval);
     clearInterval(monsterInterval);
 
@@ -179,6 +184,25 @@ function generateMaze() {
         }
     }
 
+    // 3. Post-Processing: Create Loops (Tricky)
+    // Randomly remove some walls to create loops/multiple paths
+    for (let i = 0; i < (ROWS * COLS) * 0.05; i++) {
+        let rr = Math.floor(Math.random() * (ROWS - 2)) + 1;
+        let cc = Math.floor(Math.random() * (COLS - 2)) + 1;
+        if (maze[rr][cc] === 1) {
+            // Check if removing it connects two open spaces
+            let neighbors = 0;
+            if (maze[rr - 1][cc] === 0) neighbors++;
+            if (maze[rr + 1][cc] === 0) neighbors++;
+            if (maze[rr][cc - 1] === 0) neighbors++;
+            if (maze[rr][cc + 1] === 0) neighbors++;
+
+            if (neighbors >= 2) {
+                maze[rr][cc] = 0;
+            }
+        }
+    }
+
     // Reset Player
     playerPos = { r: 1, c: 1 };
 
@@ -230,31 +254,11 @@ function updatePlayerSelect() {
     if (newCell) newCell.classList.add('player');
 }
 
-// Track if player started moving for monster spawn
-let hasStartedMoving = false;
+// Track steps for spawn
+const STEPS_TO_SPAWN = 8;
 
 function handleInput(e) {
-    if (!isGameActive || isGameOver) return; // Block input if game not active
-
-    // Start Monster Timer on first move
-    if (!hasStartedMoving && monsterActive) {
-        hasStartedMoving = true;
-        console.log("Player moved. Entity wakup timer started (10s)...");
-        setTimeout(() => {
-            if (isGameOver) return;
-            monsterPos = { r: 1, c: 1 };
-            updateMonsterVisuals();
-            console.log("Entity Spawned!");
-
-            // Speed Logic: Base 1.5s, increases by 0.1s (100ms) per level
-            // Level 2: 1500ms
-            // Level 3: 1600ms
-            // Level 4: 1700ms ...
-            let speed = 1500 + ((level - 2) * 100);
-
-            monsterInterval = setInterval(moveMonster, speed);
-        }, 10000); // 10s Delay
-    }
+    if (!isGameActive || isGameOver) return;
 
     let nextR = playerPos.r;
     let nextC = playerPos.c;
@@ -275,11 +279,26 @@ function handleInput(e) {
     playerPos.c = nextC;
     updatePlayerSelect();
 
+    // Step Tracking for Monster Spawn
+    if (monsterActive && !monsterSpawned) {
+        stepsTaken++;
+        if (stepsTaken >= STEPS_TO_SPAWN) {
+            monsterSpawned = true;
+            monsterPos = { r: 1, c: 1 }; // Spawn at start
+            console.log("Entity Spawned after 8 steps!");
+            updateMonsterVisuals();
+
+            // Constant Speed 1.5s (1500ms)
+            let speed = 1500;
+            monsterInterval = setInterval(moveMonster, speed);
+        }
+    }
+
     if (playerPos.r === goalPos.r && playerPos.c === goalPos.c) {
         handleWin();
     }
     // Check Monster Collision
-    if (monsterActive && playerPos.r === monsterPos.r && playerPos.c === monsterPos.c) {
+    if (monsterActive && monsterPos.r !== -1 && playerPos.r === monsterPos.r && playerPos.c === monsterPos.c) {
         handleGameOver("CAUGHT BY ENTITY");
     }
 }

@@ -383,11 +383,16 @@ function animate() {
 
 // --- MEDIAPIPE HAND TRACKING ---
 function onResults(results) {
-    if (isGameOver) return; // Save resources
+    if (isGameOver) return;
 
+    // Draw to PIP Canvas
     pipCtx.save();
     pipCtx.clearRect(0, 0, pipCanvas.width, pipCanvas.height);
-    pipCtx.drawImage(results.image, 0, 0, pipCanvas.width, pipCanvas.height);
+
+    // Draw Video Feed
+    if (results.image) {
+        pipCtx.drawImage(results.image, 0, 0, pipCanvas.width, pipCanvas.height);
+    }
 
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
         const landmarks = results.multiHandLandmarks[0];
@@ -436,14 +441,20 @@ hands.setOptions({
 });
 hands.onResults(onResults);
 
+// Robust Camera Init
 const camera = new Camera(videoElement, {
     onFrame: async () => {
         await hands.send({ image: videoElement });
     },
-    width: 320,
-    height: 240
+    width: 640, // Increased resolution for better tracking
+    height: 480
 });
-camera.start();
+camera.start().then(() => {
+    console.log("Camera started successfully");
+}).catch(err => {
+    console.error("Camera failed to start", err);
+    alert("Camera Error: " + err.message + ". Please allow camera access.");
+});
 
 // Inputs
 window.addEventListener('keydown', (e) => {
@@ -457,7 +468,7 @@ window.addEventListener('mouseup', () => liftInput = 0);
 window.addEventListener('touchstart', (e) => { liftInput = 1; e.preventDefault(); }, { passive: false });
 window.addEventListener('touchend', (e) => { liftInput = 0; e.preventDefault(); });
 
-retryBtn.addEventListener('click', resetGame);
+retryBtn.addEventListener('click', startCountdown); // Fix: Call startCountdown not resetGame (resetGame undefined)
 
 // Start with countdown
 startCountdown();

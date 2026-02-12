@@ -296,12 +296,14 @@ if (!isDebug) {
             return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
         }
     });
+
     hands.setOptions({
         maxNumHands: 1,
         modelComplexity: 1,
         minDetectionConfidence: 0.5,
         minTrackingConfidence: 0.5
     });
+
     hands.onResults(onResults);
 
     const camera = new Camera(videoElement, {
@@ -311,8 +313,12 @@ if (!isDebug) {
         width: 1280,
         height: 720
     });
-    camera.start().catch(() => {
-        alert("Camera failed. Switching to Mouse Debug Mode.");
+
+    camera.start().then(() => {
+        console.log("Holo-Controller Camera started");
+    }).catch(err => {
+        console.error("Camera failed", err);
+        alert("Camera Error: " + err.message + ". Switching to debug mode.");
         isDebug = true;
         loopDebug();
     });
