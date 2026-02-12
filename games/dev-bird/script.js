@@ -277,7 +277,9 @@ function startCountdown() {
     frames = 0;
 
     // Visuals for System Boot
-    countdownEl.style.display = 'flex'; // Changed from block to flex for centering
+    countdownEl.style.display = 'flex';
+    countdownEl.style.visibility = 'visible'; // Ensure visibility
+    countdownEl.style.opacity = '1';
     // Verify CSS handles this or add inline styles for safety
     countdownEl.style.position = 'absolute';
     countdownEl.style.top = '0';
@@ -360,6 +362,9 @@ function drawBackground() {
 function animate() {
     if (isGameOver && !modal.classList.contains('active')) return;
 
+    // Safety check for context
+    if (!ctx) return;
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     drawBackground();
@@ -370,9 +375,10 @@ function animate() {
         drawFloatingTexts();
         frames++;
     } else if (!isGameOver) {
+        // Preview Mode
         player.y = canvas.height / 2 + Math.sin(Date.now() / 300) * 10;
 
-        // Clear coins/obstacles on restart preview
+        // Ensure obstacles cleared for clean start
         obstacles.length = 0;
         coins.length = 0;
     }
@@ -428,35 +434,47 @@ function countFingers(landmarks) {
     return count;
 }
 
-const hands = new Hands({
-    locateFile: (file) => {
-        return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+// --- MEDIAPIPE HAND TRACKING ---
+// Robust Setup with Try-Catch
+try {
+    if (typeof Hands !== 'undefined' && typeof Camera !== 'undefined') {
+        const hands = new Hands({
+            locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+            }
+        });
+        hands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+        hands.onResults(onResults);
+
+        const camera = new Camera(videoElement, {
+            onFrame: async () => {
+                await hands.send({ image: videoElement });
+            },
+            width: 640,
+            height: 480
+        });
+        camera.start().then(() => {
+            console.log("Camera started successfully");
+        }).catch(err => {
+            console.error("Camera failed start", err);
+            gestureIcon.innerText = "CAM ERROR";
+            gestureIcon.style.color = "red";
+        });
+    } else {
+        throw new Error("MediaPipe libraries missing");
     }
-});
-hands.setOptions({
-    maxNumHands: 1,
-    modelComplexity: 1,
-    minDetectionConfidence: 0.5,
-    minTrackingConfidence: 0.5
-});
-hands.onResults(onResults);
+} catch (e) {
+    console.warn("MediaPipe Init Failed:", e);
+    // Fallback UI or non-intrusive error
+    gestureIcon.innerText = "NO CAM";
+}
 
-// Robust Camera Init
-const camera = new Camera(videoElement, {
-    onFrame: async () => {
-        await hands.send({ image: videoElement });
-    },
-    width: 640, // Increased resolution for better tracking
-    height: 480
-});
-camera.start().then(() => {
-    console.log("Camera started successfully");
-}).catch(err => {
-    console.error("Camera failed to start", err);
-    alert("Camera Error: " + err.message + ". Please allow camera access.");
-});
-
-// Inputs
+// Inputs - Always Active
 window.addEventListener('keydown', (e) => {
     if (e.code === 'Space') liftInput = 1;
 });
@@ -468,8 +486,8 @@ window.addEventListener('mouseup', () => liftInput = 0);
 window.addEventListener('touchstart', (e) => { liftInput = 1; e.preventDefault(); }, { passive: false });
 window.addEventListener('touchend', (e) => { liftInput = 0; e.preventDefault(); });
 
-retryBtn.addEventListener('click', startCountdown); // Fix: Call startCountdown not resetGame (resetGame undefined)
+retryBtn.addEventListener('click', startCountdown);
 
-// Start with countdown
+// Start Game Loop Immediately
 startCountdown();
-animate();
+requestAnimationFrame(animate); // Start loop safely

@@ -290,39 +290,56 @@ function onResults(results) {
 }
 
 // Setup MediaPipe
-if (!isDebug) {
-    const hands = new Hands({
-        locateFile: (file) => {
-            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
-        }
-    });
+// Setup MediaPipe
+try {
+    if (typeof Hands === 'undefined') {
+        throw new Error("MediaPipe Hands library not loaded.");
+    }
+    if (typeof Camera === 'undefined') {
+        throw new Error("MediaPipe Camera library not loaded.");
+    }
 
-    hands.setOptions({
-        maxNumHands: 1,
-        modelComplexity: 1,
-        minDetectionConfidence: 0.5,
-        minTrackingConfidence: 0.5
-    });
+    if (!isDebug) {
+        const hands = new Hands({
+            locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+            }
+        });
 
-    hands.onResults(onResults);
+        hands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
 
-    const camera = new Camera(videoElement, {
-        onFrame: async () => {
-            await hands.send({ image: videoElement });
-        },
-        width: 1280,
-        height: 720
-    });
+        hands.onResults(onResults);
 
-    camera.start().then(() => {
-        console.log("Holo-Controller Camera started");
-    }).catch(err => {
-        console.error("Camera failed", err);
-        alert("Camera Error: " + err.message + ". Switching to debug mode.");
-        isDebug = true;
+        const camera = new Camera(videoElement, {
+            onFrame: async () => {
+                await hands.send({ image: videoElement });
+            },
+            width: 1280,
+            height: 720
+        });
+
+        camera.start().then(() => {
+            console.log("Holo-Controller Camera started");
+        }).catch(err => {
+            console.error("Camera failed", err);
+            // Don't alert affecting UX loop, just switch mode
+            isDebug = true;
+            loopDebug();
+        });
+    } else {
         loopDebug();
-    });
-} else {
+    }
+} catch (e) {
+    console.error("Critical MediaPipe Error:", e);
+    // Fallback to debug/mouse mode if MP fails completely
+    isDebug = true;
+    systemStatusEl.innerText = "SYSTEM OFFLINE (MOUSE MODE)";
+    systemStatusEl.style.color = "#FF0000";
     loopDebug();
 }
 
