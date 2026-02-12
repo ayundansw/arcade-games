@@ -27,6 +27,46 @@ body {
     transition: width 0.1s linear;
 }
 
+#gameOverModal.active {
+    display: flex;
+}
+
+/* Feedback Popup (New) */
+.feedback-popup {
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    background: rgba(0, 0, 0, 0.9);
+    border: 3px solid #fff;
+    padding: 20px 40px;
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 200;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+}
+
+.feedback-popup.active {
+    transform: translate(-50%, -50%) scale(1);
+}
+
+#feedback-icon {
+    font-size: 3rem;
+    margin-bottom: 10px;
+}
+
+#feedback-text {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-shadow: 0 0 10px currentColor;
+    /* Glow matches text color */
+}
+
 .stats {
     display: flex;
     justify-content: space-between;
@@ -49,7 +89,8 @@ body {
     font-size: 1.8rem;
     margin-bottom: 30px;
     color: var(--pale-cyan);
-    min-height: 80px; /* Prevent layout jump */
+    min-height: 80px;
+    /* Prevent layout jump */
     display: flex;
     align-items: center;
     justify-content: center;

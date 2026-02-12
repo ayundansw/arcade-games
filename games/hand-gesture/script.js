@@ -1,201 +1,343 @@
 const videoElement = document.getElementById('input_video');
 const canvasElement = document.getElementById('output_canvas');
 const canvasCtx = canvasElement.getContext('2d');
-const targetEl = document.getElementById('targetNumber');
-const detectedEl = document.getElementById('detectedNumber');
 const scoreEl = document.getElementById('score');
-const loadingBar = document.getElementById('loadingBar');
-const debugControls = document.getElementById('debugControls');
+const systemStatusEl = document.getElementById('systemStatus');
+const modal = document.getElementById('gameOverModal');
+const finalScoreEl = document.getElementById('finalScore');
+const retryBtn = document.getElementById('retryBtn');
 
-let targetNumber = 1;
-let currentDetected = 0;
+const countdownOverlay = document.getElementById('countdown-overlay');
+const countdownNumber = document.getElementById('countdown-number');
+
+// Game State
+let isGameActive = false;
 let score = 0;
-let holdStartTime = 0;
-let isHolding = false;
+let enemies = [];
+let particles = [];
+let lastShotTime = 0;
+let handLandmarks = null;
+let isPinching = false;
+const PINCH_THRESHOLD = 0.05; // Distance between thumb and index
+
+// Debug Mode (Mouse)
+let mousePos = { x: 0, y: 0 };
+let isMouseDown = false;
 let isDebug = false;
 
-// Check URL for debug flag or force if camera fails
+// Check URL for debug
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.has('debug')) {
     isDebug = true;
-    enableDebugMode();
+    systemStatusEl.innerText = "DEBUG MODE";
+    systemStatusEl.style.color = "#FFFF00";
 }
 
-function enableDebugMode() {
-    isDebug = true;
-    debugControls.style.display = 'block';
-    targetEl.innerText = targetNumber;
-    
-    // Fallback Loop for Debug
-    function debugLoop() {
-        if (isDebug) {
-            checkGameLogic(currentDetected);
-            requestAnimationFrame(debugLoop);
+class Enemy {
+    constructor() {
+        this.radius = 30;
+        this.x = Math.random() * (canvasElement.width - 100) + 50;
+        this.y = Math.random() * (canvasElement.height - 100) + 50;
+        this.vx = (Math.random() - 0.5) * 4;
+        this.vy = (Math.random() - 0.5) * 4;
+        this.life = 100;
+        this.color = `hsl(${Math.random() * 60 + 300}, 100%, 50%)`; // Pink/Purple/Red
+    }
+
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+
+        // Bounce
+        if (this.x < this.radius || this.x > canvasElement.width - this.radius) this.vx *= -1;
+        if (this.y < this.radius || this.y > canvasElement.height - this.radius) this.vy *= -1;
+    }
+
+    draw() {
+        canvasCtx.beginPath();
+        canvasCtx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        canvasCtx.fillStyle = this.color;
+        canvasCtx.shadowBlur = 20;
+        canvasCtx.shadowColor = this.color;
+        canvasCtx.fill();
+        canvasCtx.shadowBlur = 0;
+        canvasCtx.closePath();
+
+        // Inner core
+        canvasCtx.beginPath();
+        canvasCtx.arc(this.x, this.y, this.radius * 0.5, 0, Math.PI * 2);
+        canvasCtx.fillStyle = '#fff';
+        canvasCtx.fill();
+        canvasCtx.closePath();
+    }
+}
+
+class Particle {
+    constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        this.size = Math.random() * 5 + 2;
+        this.speedX = (Math.random() - 0.5) * 10;
+        this.speedY = (Math.random() - 0.5) * 10;
+        this.color = color;
+        this.life = 1.0;
+    }
+    update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.life -= 0.05;
+    }
+    draw() {
+        canvasCtx.globalAlpha = this.life;
+        canvasCtx.fillStyle = this.color;
+        canvasCtx.beginPath();
+        canvasCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        canvasCtx.fill();
+        canvasCtx.globalAlpha = 1.0;
+    }
+}
+
+function startSystemBoot() {
+    let count = 5;
+    countdownOverlay.style.display = 'flex';
+    countdownNumber.innerText = count;
+
+    // Clear old game state
+    enemies = [];
+    particles = [];
+    score = 0;
+    timeRemaining = 60;
+    scoreEl.innerText = score;
+    timeEl.innerText = timeRemaining;
+    timeEl.style.color = "var(--neon-cyan)";
+
+    isGameActive = false;
+    modal.classList.remove('active');
+
+    clearInterval(timerInterval);
+
+    const interval = setInterval(() => {
+        count--;
+        if (count > 0) {
+            countdownNumber.innerText = count;
+        } else if (count === 0) {
+            countdownNumber.innerHTML = `<span style="color:#00FF00; text-shadow: 0 0 30px #00FF00;">GO!</span>`;
+        } else {
+            clearInterval(interval);
+            countdownOverlay.style.display = 'none';
+            isGameActive = true;
+            startGame();
+        }
+    }, 1000);
+}
+
+function startGame() {
+    spawnEnemy();
+    // Start Match Timer
+    timerInterval = setInterval(() => {
+        if (!isGameActive) return;
+        timeRemaining--;
+        timeEl.innerText = timeRemaining;
+
+        if (timeRemaining <= 10) {
+            timeEl.style.color = "#FF0000";
+        }
+
+        if (timeRemaining <= 0) {
+            gameOver();
+        }
+    }, 1000);
+}
+
+function gameOver() {
+    isGameActive = false;
+    clearInterval(timerInterval);
+    finalScoreEl.innerText = score;
+    modal.classList.add('active');
+}
+
+function spawnEnemy() {
+    if (!isGameActive) return;
+    if (enemies.length < 5) {
+        enemies.push(new Enemy());
+    }
+    setTimeout(spawnEnemy, 2000);
+}
+
+function handleGameplay() {
+    if (!isGameActive) return;
+
+    // 1. Get Aim Point
+    let aimX = 0, aimY = 0;
+    let shooting = false;
+
+    if (handLandmarks) {
+        // Use Index Finger Tip (8)
+        aimX = handLandmarks[8].x * canvasElement.width;
+        aimY = handLandmarks[8].y * canvasElement.height;
+
+        // Check Pinch (Thumb 4, Index 8)
+        // Note: Landmarks are normalized (0-1). Distance needs to be scale-independent or roughly calc
+        // We can just use Euclidean distance of normalized coords.
+        let dx = handLandmarks[8].x - handLandmarks[4].x;
+        let dy = handLandmarks[8].y - handLandmarks[4].y;
+        let dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < PINCH_THRESHOLD) {
+            if (!isPinching) {
+                shooting = true; // Trigger once
+                isPinching = true;
+            }
+        } else {
+            isPinching = false;
+        }
+    } else if (isDebug) {
+        // Mouse Fallback
+        aimX = mousePos.x;
+        aimY = mousePos.y;
+        if (isMouseDown) {
+            if (!isPinching) {
+                shooting = true;
+                isPinching = true;
+            }
+        } else {
+            isPinching = false;
         }
     }
-    debugLoop();
-}
 
-// Global function for debug buttons
-window.setDebugFinger = (num) => {
-    currentDetected = num;
-    detectedEl.innerText = num;
-};
+    // 2. Draw Crosshair
+    if (aimX > 0) {
+        canvasCtx.strokeStyle = isPinching ? '#FF0000' : '#00FFFF';
+        canvasCtx.lineWidth = 3;
+        canvasCtx.beginPath();
+        canvasCtx.arc(aimX, aimY, 20, 0, Math.PI * 2);
+        canvasCtx.moveTo(aimX - 30, aimY);
+        canvasCtx.lineTo(aimX + 30, aimY);
+        canvasCtx.moveTo(aimX, aimY - 30);
+        canvasCtx.lineTo(aimX, aimY + 30);
+        canvasCtx.stroke();
+    }
 
-function generateTarget() {
-    let newTarget;
-    do {
-        newTarget = Math.floor(Math.random() * 5) + 1; // 1 to 5
-    } while (newTarget === targetNumber);
-    targetNumber = newTarget;
-    targetEl.innerText = targetNumber;
-    
-    // Reset Hold
-    isHolding = false;
-    loadingBar.classList.remove('filling');
-    loadingBar.style.width = '200px'; // Reset container size visual if needed, but we manipulate ::after via class or logic?
-    // Actually, to animate width from 0 to 100, we need to manipulate the element style or class
-    // In CSS I used a pseudo element. Let's change the logic to use inline style on the bar itself if easier, 
-    // OR just toggle the class 'filling' which has the transition.
-    
-    // Reset visual
-    const bar = document.querySelector('.loading-bar');
-    // Force reflow
-    bar.classList.remove('filling');
-    void bar.offsetWidth; 
-}
+    // 3. Handle Shooting
+    if (shooting) {
+        // Visual Beam
+        canvasCtx.strokeStyle = '#FF0000';
+        canvasCtx.lineWidth = 5;
+        canvasCtx.shadowBlur = 20;
+        canvasCtx.shadowColor = '#FF0000';
+        canvasCtx.beginPath();
+        // Beam source: Hand Palm/Wrist? Or just logic beam?
+        // Let's just create an explosion at Aim
 
-function checkGameLogic(detected) {
-    detectedEl.innerText = detected;
-
-    if (detected === targetNumber) {
-        if (!isHolding) {
-            isHolding = true;
-            holdStartTime = Date.now();
-            document.querySelector('.loading-bar').classList.add('filling');
-        } else {
-            // Check if held for 1 second
-            if (Date.now() - holdStartTime >= 1000) {
+        // Check Collisions
+        for (let i = 0; i < enemies.length; i++) {
+            let e = enemies[i];
+            let dist = Math.sqrt((aimX - e.x) ** 2 + (aimY - e.y) ** 2);
+            if (dist < e.radius + 20) { // +20 margin for aim
+                // Hit!
+                createExplosion(e.x, e.y, e.color);
+                enemies.splice(i, 1);
                 score++;
                 scoreEl.innerText = score;
-                // Success visual
-                targetEl.style.color = '#00FF00';
-                setTimeout(() => targetEl.style.color = '', 200);
-                generateTarget();
+                i--;
             }
         }
-    } else {
-        if (isHolding) {
-            isHolding = false;
-            document.querySelector('.loading-bar').classList.remove('filling');
+    }
+
+    // 4. Update Enemies
+    for (let e of enemies) {
+        e.update();
+        e.draw();
+    }
+
+    // 5. Update Particles
+    for (let i = 0; i < particles.length; i++) {
+        particles[i].update();
+        particles[i].draw();
+        if (particles[i].life <= 0) {
+            particles.splice(i, 1);
+            i--;
         }
     }
 }
 
-// MediaPipe Implementation
-function onResults(results) {
-    if (isDebug) return; // Ignore camera in debug mode
+function createExplosion(x, y, color) {
+    for (let i = 0; i < 15; i++) {
+        particles.push(new Particle(x, y, color));
+    }
+}
 
+function onResults(results) {
     canvasCtx.save();
     canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+    // Mirror for self-view feel? Input is already mirrored usually?
+    // MediaPipe Hands usually returns normalized coordinates. 
+    // We draw image first.
     canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
-    
+
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-        const landmarks = results.multiHandLandmarks[0];
-        drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 5});
-        drawLandmarks(canvasCtx, landmarks, {color: '#FF0000', lineWidth: 2});
-        
-        const fingers = countFingers(landmarks);
-        checkGameLogic(fingers);
+        handLandmarks = results.multiHandLandmarks[0];
+        // Draw Skeleton for cool HUD effect
+        drawConnectors(canvasCtx, handLandmarks, HAND_CONNECTIONS, { color: '#00FFFF', lineWidth: 2 });
+        drawLandmarks(canvasCtx, handLandmarks, { color: '#00FFFF', lineWidth: 1, radius: 2 });
     } else {
-        checkGameLogic(0);
+        handLandmarks = null;
     }
+
+    handleGameplay();
     canvasCtx.restore();
 }
 
-function countFingers(landmarks) {
-    // Thumb, Index, Middle, Ring, Pinky
-    // Tips: 4, 8, 12, 16, 20
-    // PIPs/Bases: 3, 6, 10, 14, 18 (Using PIP (6,10,14,18) for fingers)
-    // Thumb is special.
-    
-    let count = 0;
-
-    // Thumb: Check x distance relative to wrist/knuckles depending on hand.
-    // Simplification: Check if Tip (4) is "extended" away from palm.
-    // robust method: Compare 4.x with 3.x? Depends on hand (L/R).
-    // Let's assume Tip.x < IP.x for Right hand if palm facing camera?
-    // Too complex for simple script. 
-    // Alternative: Distance between Tip(4) and PinkyBase(17). If far, open.
-    // Let's try: Is Tip (4) x coord further from Pinky (17) x coord than IP (3) is?
-    
-    // For now, let's stick to vertical fingers (Index-Pinky)
-    // Y coordinates: 0 is top. So Tip.y < PIP.y means finger is UP.
-    
-    if (landmarks[8].y < landmarks[6].y) count++; // Index
-    if (landmarks[12].y < landmarks[10].y) count++; // Middle
-    if (landmarks[16].y < landmarks[14].y) count++; // Ring
-    if (landmarks[20].y < landmarks[18].y) count++; // Pinky
-    
-    // Thumb (4) vs (3)
-    // Checking X diff roughly. 
-    // If abs(Tip.x - Base.x) > Threshold? 
-    // Let's rely on checking if it's far from index base.
-    // Hack: Just check if 4.x is outside the palm bounding box?
-    
-    // Generic check: 
-    // If tip is to the left/right of the knuckle.
-    // Let's count thumb if tip.x is further out than IP.x
-    // BUT, mirrored... 
-    // Let's just try: if landmarks[4].x < landmarks[3].x (Right hand facing cam, thumb on left)
-    // Since we don't know handedness easily without checking label, assume 4 fingers first.
-    // To support 5, we need thumb.
-    
-    // Simple Thumb Logic:
-    // If distance(4, 17) > distance(3, 17) ? 
-    // No.
-    
-    // Let's use the X coordinate comparison which usually works for open palm.
-    // Check if thumb tip is to the side of the knuckle
-    if (Math.abs(landmarks[4].x - landmarks[17].x) > Math.abs(landmarks[3].x - landmarks[17].x)) {
-        count++;
-    }
-
-    return count;
-}
-
-// Initialize Hands
+// Setup MediaPipe
 if (!isDebug) {
-    const hands = new Hands({locateFile: (file) => {
-        return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
-    }});
-
+    const hands = new Hands({
+        locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+        }
+    });
     hands.setOptions({
         maxNumHands: 1,
         modelComplexity: 1,
         minDetectionConfidence: 0.5,
         minTrackingConfidence: 0.5
     });
-
     hands.onResults(onResults);
 
-    // Camera
     const camera = new Camera(videoElement, {
         onFrame: async () => {
-            await hands.send({image: videoElement});
+            await hands.send({ image: videoElement });
         },
         width: 1280,
         height: 720
     });
-
-    camera.start().catch(err => {
-        console.error("Camera failed", err);
-        alert("Camera access denied or unavailable. Switching to DEBUG MODE.");
-        enableDebugMode();
+    camera.start().catch(() => {
+        alert("Camera failed. Switching to Mouse Debug Mode.");
+        isDebug = true;
+        loopDebug();
     });
+} else {
+    loopDebug();
 }
 
-// Resize Canvas
+// Mouse Debug Handling
+window.addEventListener('mousemove', e => {
+    mousePos.x = e.clientX;
+    mousePos.y = e.clientY;
+});
+window.addEventListener('mousedown', () => isMouseDown = true);
+window.addEventListener('mouseup', () => isMouseDown = false);
+
+function loopDebug() {
+    // Manually clear and draw for debug without camera
+    canvasCtx.fillStyle = '#000';
+    canvasCtx.fillRect(0, 0, canvasElement.width, canvasElement.height);
+
+    handleGameplay();
+    requestAnimationFrame(loopDebug);
+}
+
+// Resize
 function resizeCanvas() {
     canvasElement.width = window.innerWidth;
     canvasElement.height = window.innerHeight;
@@ -203,4 +345,7 @@ function resizeCanvas() {
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
-generateTarget();
+retryBtn.addEventListener('click', startSystemBoot);
+
+// Initial Boot
+startSystemBoot();

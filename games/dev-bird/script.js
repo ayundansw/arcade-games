@@ -105,38 +105,83 @@ const player = {
     }
 };
 
-// Obstacles
-const obstacles = [];
-const obstacleWidth = 80;
-const gapHeight = 220;
-const spawnRate = 100;
+// Coins
+const coins = [];
+const coinImg = new Image();
+const coinSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <circle cx="16" cy="16" r="14" fill="#FFD700" stroke="#DAA520" stroke-width="2"/>
+  <text x="50%" y="50%" text-anchor="middle" dy=".3em" font-family="monospace" font-size="20" fill="#B8860B">$</text>
+  <circle cx="16" cy="16" r="10" fill="none" stroke="#FFFF00" stroke-width="1" stroke-dasharray="4 2">
+    <animateTransform attributeName="transform" type="rotate" from="0 16 16" to="360 16 16" dur="3s" repeatCount="indefinite"/>
+  </circle>
+</svg>`;
+coinImg.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(coinSvg);
+
+class Coin {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.size = 30;
+        this.markedForDeletion = false;
+        this.wobble = Math.random() * Math.PI * 2;
+    }
+
+    update() {
+        this.x -= gameSpeed;
+        this.wobble += 0.1;
+        this.y += Math.sin(this.wobble) * 0.5; // Floating effect
+
+        if (this.x + this.size < 0) this.markedForDeletion = true;
+    }
+
+    draw() {
+        ctx.drawImage(coinImg, this.x, this.y, this.size, this.size);
+    }
+}
 
 class Obstacle {
     constructor() {
         this.x = canvas.width;
-        // Make gaps easier (more centered) in the beginning
-        const centerBias = score < 2 ? 0 : (Math.random() * 200 - 100);
-        this.topHeight = (canvas.height / 2) - (gapHeight / 2) + centerBias;
+        this.obstacleWidth = 80;
 
-        // Randomize fully after easy mode
-        if (score >= 2) {
-            this.topHeight = Math.random() * (canvas.height - gapHeight - 100) + 50;
+        // Dynamic Difficulty
+        // As score increases, gap gets smaller (down to a limit)
+        let gapReduction = Math.min(score * 2, 60);
+        this.gapHeight = 220 - gapReduction;
+
+        // Random Position
+        // Ensure gap is always within playable area
+        const minTop = 50;
+        const maxTop = canvas.height - this.gapHeight - 50;
+        this.topHeight = Math.random() * (maxTop - minTop) + minTop;
+        this.bottomHeight = canvas.height - this.gapHeight - this.topHeight;
+
+        this.passed = false;
+        this.markedForDeletion = false;
+
+        // Movement Logic (Moving Pipes)
+        // Starts appearing after score 5, becomes more frequent
+        this.moving = (score >= 5) && (Math.random() < 0.5 + (score * 0.01));
+        this.moveSpeed = 0;
+        if (this.moving) {
+            this.moveSpeed = (Math.random() * 1.5 + 0.5) * (Math.random() > 0.5 ? 1 : -1);
         }
 
-        this.bottomHeight = canvas.height - this.topHeight - gapHeight;
-        this.passed = false;
-
-        // Progressive Difficulty: Only move after passing 2 pipes
-        this.moving = (score >= 2) && (Math.random() > 0.4);
-        this.moveSpeed = (Math.random() * 1.5 + 0.5) * (Math.random() > 0.5 ? 1 : -1);
+        // Spawn Coin (50% chance if score > 2)
+        if (score > 2 && Math.random() > 0.5) {
+            // Position coin in the center of the gap
+            let coinX = this.x + (this.obstacleWidth / 2) - 15;
+            let coinY = this.topHeight + (this.gapHeight / 2) - 15;
+            coins.push(new Coin(coinX, coinY));
+        }
     }
 
     draw() {
         ctx.fillStyle = '#FF4444';
         ctx.shadowBlur = 15;
         ctx.shadowColor = '#FF0000';
-        ctx.fillRect(this.x, 0, obstacleWidth, this.topHeight);
-        ctx.fillRect(this.x, canvas.height - this.bottomHeight, obstacleWidth, this.bottomHeight);
+        ctx.fillRect(this.x, 0, this.obstacleWidth, this.topHeight);
+        ctx.fillRect(this.x, canvas.height - this.bottomHeight, this.obstacleWidth, this.bottomHeight);
         ctx.shadowBlur = 0;
 
         ctx.fillStyle = '#00FF00';
@@ -151,37 +196,142 @@ class Obstacle {
         if (this.moving) {
             this.topHeight += this.moveSpeed;
             this.bottomHeight -= this.moveSpeed;
+            // Bounce bounds
             if (this.topHeight < 50 || this.bottomHeight < 50) this.moveSpeed *= -1;
         }
 
-        if (player.x < this.x + obstacleWidth &&
+        // Collision Detection (Pipe)
+        if (player.x < this.x + this.obstacleWidth &&
             player.x + player.width > this.x &&
             (player.y < this.topHeight || player.y + player.height > canvas.height - this.bottomHeight)) {
             gameOver();
         }
 
-        if (this.x + obstacleWidth < player.x && !this.passed) {
+        // Score Pass
+        if (this.x + this.obstacleWidth < player.x && !this.passed) {
             score++;
             scoreElement.innerText = score;
             this.passed = true;
-            if (score % 5 === 0) gameSpeed += 0.5;
+            if (score % 5 === 0) gameSpeed += 0.2; // Gentler speed increase
         }
+
+        if (this.x + this.obstacleWidth < 0) this.markedForDeletion = true;
     }
 }
 
-function handleObstacles() {
+function handleGameObjects() {
     if (!isGameStarted) return;
 
+    // Spawning
     if (frames % spawnRate === 0) {
         obstacles.push(new Obstacle());
     }
 
+    // Update & Draw Obstacles
     for (let i = 0; i < obstacles.length; i++) {
         obstacles[i].update();
         obstacles[i].draw();
+        if (obstacles[i].markedForDeletion) {
+            obstacles.splice(i, 1);
+            i--;
+        }
+    }
 
-        if (obstacles[i].x + obstacleWidth < 0) {
-            obstacles.shift();
+    // Update & Draw Coins
+    for (let i = 0; i < coins.length; i++) {
+        coins[i].update();
+        coins[i].draw();
+
+        // Collision Coin
+        if (checkCollision(player, coins[i])) {
+            score += 5; // Bonus Score
+            scoreElement.innerText = score;
+
+            // Text Feedback
+            showFloatingText("+5", coins[i].x, coins[i].y);
+
+            coins.splice(i, 1);
+            i--;
+            continue;
+        }
+
+        if (coins[i].markedForDeletion) {
+            coins.splice(i, 1);
+            i--;
+        }
+    }
+}
+
+// System Boot Countdown
+function startCountdown() {
+    isGameStarted = false;
+    modal.classList.remove('active');
+
+    // Reset player position for preview
+    player.y = canvas.height / 2;
+    player.velocity = 0;
+    obstacles.length = 0;
+    coins.length = 0;
+    score = 0;
+    scoreElement.innerText = score;
+    frames = 0;
+
+    // Visuals for System Boot
+    countdownEl.style.display = 'flex'; // Changed from block to flex for centering
+    // Verify CSS handles this or add inline styles for safety
+    countdownEl.style.position = 'absolute';
+    countdownEl.style.top = '0';
+    countdownEl.style.left = '0';
+    countdownEl.style.width = '100%';
+    countdownEl.style.height = '100%';
+    countdownEl.style.background = '#000';
+    countdownEl.style.flexDirection = 'column';
+    countdownEl.style.justifyContent = 'center';
+    countdownEl.style.alignItems = 'center';
+    countdownEl.style.zIndex = '300';
+
+    let count = 5;
+    countdownEl.innerHTML = `<div style="font-size: 2rem; color: var(--neon-cyan); margin-bottom: 20px;">SYSTEM INITIALIZING...</div>
+                             <div style="font-size: 8rem; color: #fff; text-shadow: 0 0 20px var(--neon-cyan);">${count}</div>`;
+
+    const countInterval = setInterval(() => {
+        count--;
+        if (count > 0) {
+            countdownEl.innerHTML = `<div style="font-size: 2rem; color: var(--neon-cyan); margin-bottom: 20px;">SYSTEM INITIALIZING...</div>
+                                     <div style="font-size: 8rem; color: #fff; text-shadow: 0 0 20px var(--neon-cyan);">${count}</div>`;
+        } else if (count === 0) {
+            countdownEl.innerHTML = `<div style="font-size: 8rem; color: #00FF00; text-shadow: 0 0 30px #00FF00;">GO!</div>`;
+        } else {
+            clearInterval(countInterval);
+            countdownEl.style.display = 'none';
+            isGameStarted = true;
+        }
+    }, 1000);
+}
+
+// Simple AABB Collision
+function checkCollision(rect1, rect2) {
+    return (rect1.x < rect2.x + rect2.size &&
+        rect1.x + rect1.width > rect2.x &&
+        rect1.y < rect2.y + rect2.size &&
+        rect1.y + rect1.height > rect2.y);
+}
+
+// Floating Text for Coins
+const floatingTexts = [];
+function showFloatingText(text, x, y) {
+    floatingTexts.push({ text, x, y, life: 30 });
+}
+function drawFloatingTexts() {
+    ctx.font = "bold 20px 'Orbitron'";
+    ctx.fillStyle = "#FFFF00";
+    for (let i = 0; i < floatingTexts.length; i++) {
+        let t = floatingTexts[i];
+        ctx.fillText(t.text, t.x, t.y);
+        t.y -= 1;
+        t.life--;
+        if (t.life <= 0) {
+            floatingTexts.splice(i, 1);
             i--;
         }
     }
@@ -207,61 +357,24 @@ function drawBackground() {
     ctx.stroke();
 }
 
-function startCountdown() {
-    isGameStarted = false;
-    modal.classList.remove('active');
-
-    // Reset player position for preview
-    player.y = canvas.height / 2;
-    player.velocity = 0;
-    obstacles.length = 0;
-    score = 0;
-    scoreElement.innerText = score;
-    frames = 0;
-
-    let count = 5;
-    countdownEl.style.display = 'block';
-    countdownEl.innerText = count;
-
-    const countInterval = setInterval(() => {
-        count--;
-        if (count > 0) {
-            countdownEl.innerText = count;
-        } else {
-            clearInterval(countInterval);
-            countdownEl.style.display = 'none';
-            isGameStarted = true;
-        }
-    }, 1000);
-}
-
-function gameOver() {
-    isGameOver = true;
-    isGameStarted = false;
-    finalScoreElement.innerText = score;
-    modal.classList.add('active');
-}
-
-function resetGame() {
-    isGameOver = false;
-    gameSpeed = 4;
-    startCountdown();
-}
-
 function animate() {
-    if (isGameOver && !modal.classList.contains('active')) return; // Stop if game over logic is done but modal not shown? redundant
+    if (isGameOver && !modal.classList.contains('active')) return;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     drawBackground();
 
     if (isGameStarted) {
-        handleObstacles();
         player.update();
+        handleGameObjects(); // Handles pipes and coins
+        drawFloatingTexts();
         frames++;
     } else if (!isGameOver) {
-        // Idle Animation during countdown
         player.y = canvas.height / 2 + Math.sin(Date.now() / 300) * 10;
+
+        // Clear coins/obstacles on restart preview
+        obstacles.length = 0;
+        coins.length = 0;
     }
 
     player.draw();
@@ -285,11 +398,11 @@ function onResults(results) {
 
         if (fingers >= 4) {
             liftInput = 1;
-            gestureIcon.innerText = "✈️ UP";
+            gestureIcon.innerText = "UP";
             gestureIcon.style.color = "#00FF00";
         } else if (fingers <= 1) {
             liftInput = -1;
-            gestureIcon.innerText = "⚓ DOWN";
+            gestureIcon.innerText = "DOWN";
             gestureIcon.style.color = "#FF4444";
         } else {
             liftInput = 0;

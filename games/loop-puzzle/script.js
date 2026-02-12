@@ -30,11 +30,37 @@ const DIRECTIONS = [
     [0, 1]   // Right
 ];
 
+const countdownOverlay = document.getElementById('countdown-overlay');
+const countdownNumber = document.getElementById('countdown-number');
+let isGameActive = false; // Block input during countdown
+
+function startSystemBoot() {
+    let count = 5;
+    countdownOverlay.style.display = 'flex';
+    countdownNumber.innerText = count;
+
+    const interval = setInterval(() => {
+        count--;
+        if (count > 0) {
+            countdownNumber.innerText = count;
+        } else if (count === 0) {
+            countdownNumber.innerHTML = `<span style="color:#00FF00; text-shadow: 0 0 30px #00FF00;">GO!</span>`;
+        } else {
+            clearInterval(interval);
+            countdownOverlay.style.display = 'none';
+            isGameActive = true;
+            initGame();
+        }
+    }, 1000);
+}
+
 function initGame() {
+    if (!isGameActive) return; // Prevent logic running before countdown
+
     isGameOver = false;
     winModal.classList.remove('active');
 
-    // Clear old intervals immediately
+    // ... (rest of initGame logic) ...
     clearInterval(timerInterval);
     clearInterval(monsterInterval);
 
@@ -122,9 +148,13 @@ function generateMaze() {
         let neighbors = [];
 
         // Check neighbors (jump 2 steps to preserve walls)
+        // Shuffle Directions for more randomness/twisted paths
+        let dirs = [...DIRECTIONS];
+        dirs.sort(() => Math.random() - 0.5);
+
         for (let i = 0; i < 4; i++) {
-            let dr = DIRECTIONS[i][0];
-            let dc = DIRECTIONS[i][1];
+            let dr = dirs[i][0];
+            let dc = dirs[i][1];
             let nr = current.r + (dr * 2);
             let nc = current.c + (dc * 2);
 
@@ -204,7 +234,7 @@ function updatePlayerSelect() {
 let hasStartedMoving = false;
 
 function handleInput(e) {
-    if (isGameOver) return;
+    if (!isGameActive || isGameOver) return; // Block input if game not active
 
     // Start Monster Timer on first move
     if (!hasStartedMoving && monsterActive) {
@@ -216,9 +246,11 @@ function handleInput(e) {
             updateMonsterVisuals();
             console.log("Entity Spawned!");
 
-            // Slower Speed: 1.5 Seconds per move (1500ms)
-            let speed = 1500;
-            if (level >= 3) speed = 1200; // Slightly faster but still slow on higher levels
+            // Speed Logic: Base 1.5s, increases by 0.1s (100ms) per level
+            // Level 2: 1500ms
+            // Level 3: 1600ms
+            // Level 4: 1700ms ...
+            let speed = 1500 + ((level - 2) * 100);
 
             monsterInterval = setInterval(moveMonster, speed);
         }, 10000); // 10s Delay
@@ -260,7 +292,7 @@ function updateMonsterVisuals() {
         const newCell = document.getElementById(`cell-${monsterPos.r}-${monsterPos.c}`);
         if (newCell) {
             newCell.classList.add('monster');
-            // Ensure z-index is applied via class, but strictly re-force if needed
+            // Ensure z-index is applied via class
         }
     }
 }
@@ -268,29 +300,42 @@ function updateMonsterVisuals() {
 function moveMonster() {
     if (isGameOver || monsterPos.r === -1) return;
 
-    // BFS to find shortest path to player
-    let queue = [{ r: monsterPos.r, c: monsterPos.c, path: [] }];
+    // BFS to find shortest path to player FROM CURRENT MONSTER POS
+    let startNode = { r: monsterPos.r, c: monsterPos.c, path: [] };
+    let queue = [startNode];
     let visited = new Set([`${monsterPos.r},${monsterPos.c}`]);
     let bestMove = null;
-
-    // Optimization: Limit depth if needed, but for 31x31 it's fine.
-    // To make it more aggressive/scary, maybe it can move through walls? No, that's unfair.
 
     while (queue.length > 0) {
         let curr = queue.shift();
 
+        // If reached player
         if (curr.r === playerPos.r && curr.c === playerPos.c) {
-            if (curr.path.length > 0) bestMove = curr.path[0];
+            if (curr.path.length > 0) {
+                // The first step in the path is the next move
+                bestMove = curr.path[0];
+            } else {
+                // Already at player pos (Collision will trigger next check)
+                bestMove = { r: curr.r, c: curr.c };
+            }
             break;
         }
+
+        // Shuffle directions for "Tricky" unpredictable movement if multiple paths exist? 
+        // No, BFS always finds shortest. To make it "tricky" in generation, we changed generateMaze.
+        // Here we just want it to reliably Chase.
 
         for (let i = 0; i < 4; i++) {
             let nr = curr.r + DIRECTIONS[i][0];
             let nc = curr.c + DIRECTIONS[i][1];
 
-            // Allow moving into player (who is on a path)
+            // Valid move (Walkable or Player)
             if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && maze[nr][nc] === 0 && !visited.has(`${nr},${nc}`)) {
-                let newPath = [...curr.path, { r: nr, c: nc }];
+                // Add *this specific step* to path history
+                // If path is empty, this is the First Step.
+                let newPath = [...curr.path];
+                if (newPath.length === 0) newPath.push({ r: nr, c: nc });
+
                 queue.push({ r: nr, c: nc, path: newPath });
                 visited.add(`${nr},${nc}`);
             }
@@ -304,6 +349,10 @@ function moveMonster() {
         if (monsterPos.r === playerPos.r && monsterPos.c === playerPos.c) {
             handleGameOver("CAUGHT BY ENTITY");
         }
+    } else {
+        // Fallback: If no path found (e.g., player walled off?), wait.
+        // Or if monster is stuck.
+        console.warn("Entity lost track of target.");
     }
 }
 
@@ -391,4 +440,4 @@ window.addEventListener('keydown', handleInput);
 // nextLevelBtn.addEventListener('click', initGame); 
 
 // Start
-initGame();
+startSystemBoot();

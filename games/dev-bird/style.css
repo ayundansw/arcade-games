@@ -30,8 +30,8 @@ canvas {
     position: absolute;
     bottom: 20px;
     right: 20px;
-    width: 160px;
-    height: 120px;
+    width: 240px;
+    height: 180px;
     border: 2px solid var(--neon-cyan);
     border-radius: 10px;
     overflow: hidden;
