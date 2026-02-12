@@ -6,6 +6,13 @@ const modal = document.getElementById('gameOverModal');
 const retryBtn = document.getElementById('retryBtn');
 const countdownEl = document.getElementById('countdown');
 
+// EMERGENCY DEBUG: Catch all errors
+window.onerror = function (message, source, lineno, colno, error) {
+    alert("GAME ERROR:\n" + message + "\nLine: " + lineno);
+    // Also try to show it on screen
+    if (scoreElement) scoreElement.innerText = "ERR: " + lineno;
+};
+
 // Webcam & PIP
 const videoElement = document.getElementById('input_video');
 const pipCanvas = document.getElementById('pip_canvas');
@@ -488,6 +495,9 @@ window.addEventListener('touchend', (e) => { liftInput = 0; e.preventDefault(); 
 
 retryBtn.addEventListener('click', startCountdown);
 
-// Start Game Loop Immediately
-startCountdown();
-requestAnimationFrame(animate); // Start loop safely
+// Safe Startup
+window.addEventListener('load', () => {
+    console.log("Window loaded. Starting game...");
+    startCountdown();
+    requestAnimationFrame(animate);
+});

@@ -7,6 +7,12 @@ const modal = document.getElementById('gameOverModal');
 const finalScoreEl = document.getElementById('finalScore');
 const retryBtn = document.getElementById('retryBtn');
 
+// EMERGENCY DEBUG: Catch all errors
+window.onerror = function (message, source, lineno, colno, error) {
+    alert("GAME ERROR:\n" + message + "\nLine: " + lineno);
+    if (systemStatusEl) systemStatusEl.innerText = "ERR: " + lineno;
+};
+
 const countdownOverlay = document.getElementById('countdown-overlay');
 const countdownNumber = document.getElementById('countdown-number');
 const timeEl = document.getElementById('time');
@@ -371,5 +377,8 @@ resizeCanvas();
 
 retryBtn.addEventListener('click', startSystemBoot);
 
-// Initial Boot
-startSystemBoot();
+// Safe Startup
+window.addEventListener('load', () => {
+    console.log("Window loaded. Starting Hand Gesture game...");
+    startSystemBoot();
+});
