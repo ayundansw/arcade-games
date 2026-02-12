@@ -258,6 +258,7 @@ function handleGameObjects() {
 }
 
 // System Boot Countdown
+// System Boot Countdown
 function startCountdown() {
     isGameStarted = false;
     modal.classList.remove('active');
@@ -273,32 +274,29 @@ function startCountdown() {
 
     // Visuals for System Boot
     countdownEl.style.display = 'flex';
-    countdownEl.style.visibility = 'visible'; // Ensure visibility
+    countdownEl.style.visibility = 'visible';
     countdownEl.style.opacity = '1';
-    // Verify CSS handles this or add inline styles for safety
-    countdownEl.style.position = 'absolute';
-    countdownEl.style.top = '0';
-    countdownEl.style.left = '0';
-    countdownEl.style.width = '100%';
-    countdownEl.style.height = '100%';
-    countdownEl.style.background = '#000';
-    countdownEl.style.flexDirection = 'column';
-    countdownEl.style.justifyContent = 'center';
-    countdownEl.style.alignItems = 'center';
-    countdownEl.style.zIndex = '300';
+
+    // Force Z-Index stability in JS
+    countdownEl.style.zIndex = '9999';
 
     let count = 5;
-    countdownEl.innerHTML = `<div style="font-size: 2rem; color: var(--neon-cyan); margin-bottom: 20px;">SYSTEM INITIALIZING...</div>
-                             <div style="font-size: 8rem; color: #fff; text-shadow: 0 0 20px var(--neon-cyan);">${count}</div>`;
-
-    const countInterval = setInterval(() => {
-        count--;
+    const updateCountdown = () => {
         if (count > 0) {
-            countdownEl.innerHTML = `<div style="font-size: 2rem; color: var(--neon-cyan); margin-bottom: 20px;">SYSTEM INITIALIZING...</div>
+            countdownEl.innerHTML = `<div style="font-size: 2rem; color: var(--neon-cyan); margin-bottom: 20px; text-align:center;">SYSTEM INITIALIZING...</div>
                                      <div style="font-size: 8rem; color: #fff; text-shadow: 0 0 20px var(--neon-cyan);">${count}</div>`;
         } else if (count === 0) {
             countdownEl.innerHTML = `<div style="font-size: 8rem; color: #00FF00; text-shadow: 0 0 30px #00FF00;">GO!</div>`;
-        } else {
+        }
+    };
+
+    updateCountdown();
+
+    const countInterval = setInterval(() => {
+        count--;
+        updateCountdown();
+
+        if (count < 0) {
             clearInterval(countInterval);
             countdownEl.style.display = 'none';
             isGameStarted = true;

@@ -32,6 +32,16 @@ canvas {
 }
 
 /* Webcam PIP */
+#input_video {
+    display: none !important;
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    z-index: -1;
+}
+
 .cam-pip {
     position: absolute;
     bottom: 20px;
